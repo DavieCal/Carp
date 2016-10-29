@@ -1,0 +1,723 @@
+---
+title: "Carp Count Data"
+author: "David T. Callaghan"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+    fig_caption: yes
+  html_document:
+    fig_caption: yes
+bibliography: carpbib.bib
+---
+
+#Background
+
+The common carp *Cyprinus carpiro* (henceforth carp) is one of the most trans-located species in the world, established on every continent except Antarctica. Carp have two basic habitat requirements: 1) a shallow marsh environment with abundant vegetation; 2) a deeper area to retreat to during colder months [@mccrimmon_1968]. Carp spawn in shallow flooded areas with abundant fixed vegetation on which eggs are deposited [@crivelli_1981]. Spawning begins when water temperatures are ~15--16&deg;C [@crivelli_1981]. Carp generally spawn in the spring [@mccrimmon_1968], but can span March--August and even into October [@crivelli_1981]. Most carp show high site fidelity, but a small percentage of the population may also exhibit high mobility [@crook_2004;@stuart_2006].
+
+#Objectives
+
+1) Determine what environmental variables (i.e. temperature and discharge) drive carp migration into the Delta Marsh using camera trap count data.
+
+2) Determine the effect of sampling frequency on model results.
+
+#Data exploration
+```{r load_data, echo=FALSE, message=FALSE}
+#Load data
+Delta <- read.csv(file = "DeltaNoZeroEndofJune.csv", header = TRUE)
+#Create a POSIX class Date Time field 
+Delta$DATETIME<-as.POSIXct(Delta$Date.Time,format="%d/%m/%Y %H:%M",tz="Canada/Central")
+
+library(lubridate)
+#Add day of year
+Delta$DOY<-yday(Delta$DATETIME)
+
+#add hour of day
+Delta$HOUR<-hour(Delta$DATETIME)
+#add hour of day + quarter hour
+Delta$HOUR.M<-hour(Delta$DATETIME)+minute(Delta$DATETIME)/60
+
+#add variable for hours from start (28/05/2014 10:00 = 0) to end (2014-06-30 21:45:00 = 803.75)
+Delta$TIME<-(as.numeric(Delta$DATETIME)-as.numeric(Delta$DATETIME[1]))/60/60
+
+#Adjusted area for offset = area - percentage of obstruction
+Delta$adjArea=Delta$Area*(1-(Delta$Percent.Obstructed/100))
+
+#Observation number
+Delta$Obs<-seq(1:nrow(Delta))
+
+#Adjusted Counts = Desnity
+Delta$Density<-Delta$LFC/Delta$adjArea
+
+
+
+```
+
+I will loosely follow the protocol by Zuur et al. [-@zuur_2010] for exploring the data to avoid common statistical problems including type I (i.e. rejecting the null hypothesis when it is true) or type II errors (i.e. failure to reject the null hypothesis when it is untrue).
+
+##1. Data Distribution
+
+A good place to start exploring the data is looking at the distribution of our response variable---carp counts. The distribution will give us a good indication of what kind of analysis we should use to deal with our data and if any problems may need to be addressed (i.e. many zeros). Because we are modelling count data, a generalized linear model (GLM) is an appropriate analysis [@zuur_2010]. The Poisson or negative binomial distributions are what we would expect. Looking at Figure 1, we quickly realize we are dealing with many zeros! Therefore, a Poisson or negative binomial GLM will likely produce biased parameter estimates and standard errors as well as over-dispersion. A zero-inflated or zero-altered GLM will likely be an appropriate analyses here.
+
+```{r Figure_1, echo=FALSE, fig.cap="Frequency distribution of raw (unadjusted) carp count data. Notice the large number of zeros---a good indication of zero inflation"}
+plot(table(Delta$LFC),
+     xlab="Carp counts",
+     ylab="Frequency")
+
+```
+
+##2. Dealing with the zeros
+
+Lets make sure we are dealing with true zero inflation. I have run the following models to see which ones produce similar number of zeros as our data:
+
+```{r, echo=FALSE,message=FALSE}
+library(MASS)
+library(pscl)
+
+
+#Lets make a new data frame called Z with all of our possible covariates
+Z <- cbind(Delta$LFC, Delta$Discharge.cms, Delta$Logger.Temp.C, 
+            Delta$DOY, Delta$HOUR, Delta$HOUR.M, Delta$TIME,
+           Delta$DF, Delta$Pelicans, Delta$Exposure, 
+           Delta$Image.Clarity, Delta$Water.Clarity,
+           Delta$adjArea, Delta$Percent.Obstructed, 
+           Delta$Obs,Delta$Density)
+
+#rename covariates to simplified names
+colnames(Z) <- c("Count", "Discharge", "Temp",
+                 "DOY","Hour","Hour.M","Time",
+                 "Dead", "Pelicans", "Exposure",
+                 "ImageClarity","WaterClarity",
+                 "adjArea", "PercentObstructed", 
+                 "Obs","Density")
+
+
+
+
+#change to data frame
+Z<-as.data.frame(Z)
+
+#ensure our factor covariates are infact factors
+Z$fExposure<-as.factor(Z$Exposure)
+Z$fImageClarity<-as.factor(Z$ImageClarity)
+Z$fWaterClarity<-as.factor(Z$WaterClarity)
+
+#for the binomial part change counts to 0 or 1 for >0 values
+Z$bCount<-ifelse(Z$Count>0,1,0)
+#binary pelicans factor
+Z$fPelicans<-ifelse(Z$Pelicans>0,1,0)
+Z$fPelicans<-as.factor(Z$fPelicans)
+```
+
+```{r}
+#Poisson glm
+pois<-glm(Count~Discharge+Temp+Pelicans+Time,offset=log(adjArea), family="poisson", data=Z)
+
+
+#Negative binomial glm model
+negb<-glm.nb(Count~Discharge+Temp+Pelicans+Time+offset(log(adjArea)),data=Z)
+
+#zero-inflated formula
+fm1<-formula(Count~Discharge+Temp+Pelicans+Time+offset(log(adjArea))
+            |Discharge+Temp+Pelicans+Time+fExposure+fWaterClarity+fImageClarity)
+#zero inflated poisson
+zip<-zeroinfl(fm1,data=Z)
+
+#zero inflated negative binomial
+zinb<-zeroinfl(fm1, dist="negbin",data=Z)
+
+#zero altered poisson
+zap<-hurdle(fm1,data=Z)
+
+#zero altered negative binomial
+zanb<-hurdle(fm1,dist="negbin",data=Z)
+
+
+```
+
+```{r,echo=FALSE}
+#expected number of zeros
+round(c("Obs" = sum(Z$Count < 1),
+      "Pois" = sum(dpois(0, fitted(pois))),
+      "NB" = sum(dnbinom(0, mu = fitted(negb), size = negb$theta)),
+      "ZIP" = sum(predict(zip, type = "prob")[,1]),
+      "ZINB" = sum(predict(zinb, type = "prob")[,1]),
+      "ZAP" = sum(predict(zap, type = "prob")[,1]),
+      "ZANB" = sum(predict(zanb, type = "prob")[,1])
+    ))
+```
+
+It is quite apparent that only the zero-inflated models (ZIP, ZAP, ZINB and ZANB) have similar zero counts to our observations.
+
+How we deal with the zeros is related to what kind of zeros we have. In general, techniques for dealing with zero inflation have two parts: a binomial part that deals with the zeros and a Poisson (or negative binomial) part that deals with the count data. zero-inflated models, or mixture-models, split the zeros into true zeros (fish truly absent) and false zeros (fish present but not seen). The true zeros are modelled in the Poisson GLM, while the process generating the false zeros is modelled in the binomial GLM. Two-part or hurdle models do not discriminate between true and false zeros, the presence of an animal is the result of some covariate mechanism crossing a hurdle. The hurdle model is most appropriate when there is little chance of missing any items in the counts [@verhoef_2007]. In our case, some zeros may be false zeros (missed counts)---as a result of image obstruction, exposure, water clarity or image clarity---or true zeros (i.e. fish are not present because conditions are not appropriate). Therefore, I feel a zero-inflated mixture-model would best deal with the zero inflation.
+
+##3. Outliers 
+
+Now that we have an idea of what analysis we can perform lets look at the data in more detail. Outliers can be a problem for Poisson GLM (similarly for zero-inflated models) analyses and may cause over-dispersion. I will define outliers here as observations which values are relatively larger or smaller to the majority of of observations. Here I show a boxplot (Figure 2a) and a Cleveland dotplot (Figure 2b ) of `r dim(Delta)[1]` carp count observations. The boxplot visualizes the median and spread of the data. Observations outside of the whiskers are labelled as outliers. Figure 1a shows that there are potentially `r length(boxplot(Delta$LFC, plot=FALSE)$out)` outliers. A good way to check if these are in fact outliers is a Cleveland dot plot (Figure 2b), in this graph the row number of observations is plotted vs. the frequency of carp, providing more detailed information than a boxplot. Figure 2b reveals that the possible outliers are not really outliers at all because they follow the pattern of peaks displayed by the observations.
+
+```{r Figure_2, echo=FALSE,fig.cap = "(a) Boxplot of carp frequency counts from 2222 observations taken at the same location. The line in the middle of the box represents the median, and the lower and upper ends of the box are the 25% and 75% quartiles respectively. The lines indicate 1.5 times the size of the hinge, which is the 75% minus 25% quartiles. Points beyond these lines are considered to be outliers. **(b)** Cleveland dot plot of the same data. The horizontal axis represents the carp counts, and the vertical axis corresponds to the order of the data." }
+#create layout matrix
+m<-matrix(c(1,1,
+            1,1,
+            2,2,
+            2,2,
+            2,2,
+            2,2,
+            2,2),7,2,byrow=TRUE)
+layout(m)
+
+#Change graphical paramaters to display boxplot on top of cleveland dotplot
+op<-par(mar = c(0.5,5,2,1))
+
+#boxplot of carp counts
+boxplot(Delta$LFC, horizontal=TRUE,xaxt="n")
+mtext("(a)",font=2, side = 3, line = -2, at = -7)
+#dotchart of carp counts
+par(mar = c(5,5,0,1))
+dotchart(Delta$LFC, xlab = "Carp Frequency",
+         ylab = "Order of the data", cex.lab=1.5, lcolor="transparent")
+mtext("(b)",font=2, side = 3, line = -2, at = -7)
+
+par(op)
+```
+
+Figure 2 displays a multi-panel Cleveland dot plot for our carp count data and all of our potential covariates that could influence the counts, including water discharge, water temperature, and time; as well as covariates that may influence the zeros (or false zeros) including dead fish, pelican counts, exposure factor, image clarity factor, water clarity factor and percent obstructed. For the most part the covariates look fine except for the large values (points far to the right) in the dead fish and percent obstructed panels. It appears the large number of dead fish obstructed `r max(Delta$Percent.Obstructed)`% of the image. The large number of dead fish is a rare observation and may be influential on our parameter estimates. We will have to investigate how sensitive the model is to these large values and decide if this observation is a candidate for removal. 
+
+```{r Figure_3, echo=FALSE,fig.cap= "Multi-panel Cleveland dotplot for carp counts and ten covariates that may influence the counts. The plots are ordered by date along the y-axis. Notice the possible influential values in Obstructed and Dead---this observation may be a candidate for removal if model parameters are found to be sensitive to these inputs."}
+library(lattice)
+
+Z2<-Z[,c(1:3,5,7:12,14)]
+dotplot(as.matrix(Z2), groups = FALSE,
+        strip = strip.custom(bg = 'white',
+        par.strip.text = list(cex = 0.7)),
+        scales = list(x = list(relation = "free"),
+                      y = list(relation = "free"),
+                      draw = FALSE),
+        col = 1, cex  = 0.5, pch = 16,
+        xlab = "Value of the variable",
+        ylab = "Order of the data"
+        ,layout=c(6,2)
+        )
+```
+
+Over the study duration, the viewable area of the picture frame ranges from `r min(Delta$Area.m.sq)`--`r max(Delta$Area.m.sq)` m^2^. Further reduction in visible area as a result of obstructions, such as pelicans and dead fish (See Figure 3), required an offset for adjusted area (picture frame area X percent visible area). The results of our model will therefore be a density Carp per m^2^.
+
+##4. Collinearity among covariates
+
+Ignoring collinearity among covariates may lead to a confusing statistical output with nothing significant. This is because collinearity results in inflated standard errors of parameters which in turn increase *P*-values, making it difficult to detect an effect. We can easily test for collinearity by looking at the variance inflation factors (VIF), covariates with VIF greater than 3 will be sequentially removed. Unfortunately the *vif* function from the *car* package does not allow zero-inflated models---thus, I have split up our covariates into two groups: Poisson covariates including water discharge, water temperature, pelican count, hour of day, and time; as well as binomial covariates including water discharge, water temperature, hour of day, time, pelican count, exposure factor, image clarity factor and water clarity factor. This way I can examine the Poisson covariate VIF in a Poisson GLM and the binomial covariate VIF in a binomial GLM using the *vif* function. 
+
+```{r vif, echo=FALSE,message=FALSE}
+library(car)
+zz<-vif(glm(Count~offset(log(adjArea))+Discharge+Temp+Pelicans+Hour+Time,family=poisson,data=Z))
+data.frame(VIF=zz)
+
+```
+
+Notice that all of our Poisson covariates VIF are < 3. No collinearity! Now let's look at the binomial side. 
+
+```{r vif2, echo=FALSE, message=FALSE}
+
+zz<-vif(glm(bCount~Discharge+Temp+Hour+Time+Pelicans+fExposure+fWaterClarity+fImageClarity,family=binomial,data=Z))
+data.frame(VIF=zz[,3])
+```
+
+Our eight covariates do not reveal any collinearity. Next we will examine the relationships between our covariates and the response variable.
+
+##5. Relationships Y & X
+
+Looking at the relationship between Y (carp counts) and X covariates (discharge, temperature, pelicans, hour and time) we begin to see strong nonlinear effects of discharge and temperature (Figure 4). Abundance appears to increase at negative discharges close to 0 and temperatures between 16--20&deg;C. These nonlinear trends should be modelled with an additive model (i.e. GAM) or linear model with qudratic relationships.
+
+```{r Figure_4, echo=FALSE, message=FALSE,warning=FALSE,fig.height=3 , fig.width=6, fig.cap = "Relationship between carp counts and four potential covariates. The red line represents a LOESS smoother (span=0.67,degree=1) to visualize relationships between carp counts and covariates."}
+
+Z1 <- as.vector(as.matrix(Z[, c("Discharge","Temp","Pelicans","Hour","Time")]))
+
+
+#Setup the data in vector format for the xyplot
+Y1 <- rep(Z$Count, 5)
+
+
+MyNames <- names(Z[, c("Discharge","Temp","Pelicans","Hour","Time")])
+
+ID1 <- rep(MyNames, each = length(Z$Count))
+library(lattice)
+
+
+ID1 <- factor(ID1, labels = c("Discharge","Temp","Pelicans","Hour","Time"),
+               levels = c("Discharge","Temp","Pelicans","Hour","Time"))
+
+
+xyplot(Y1 ~ Z1 | ID1, col = 1,
+  strip = function(bg='white',...) strip.default(bg='white',...),
+  scales = list(alternating = T,
+                x = list(relation = "free"),
+                y = list(relation = "same")),
+  xlab = "Covariates",
+  par.strip.text = list(cex = 0.8),
+  ylab = "Count",
+  panel=function(x, y, subscripts,...){
+    panel.grid(h =- 1, v = 2)
+    panel.points(x, y, col = rgb(0,0,0,0.1), pch = 16)
+    panel.loess(x,y,span=2/3,degree=1,col="red",lwd=2)
+    })
+
+
+```
+
+
+##6. Response variable independence
+
+A very important assumption of most statistical techniques is independence among observations. Ignoring dependence among observations (autocorrelation) can lead to underestimates of standard errors and increased false positives. The carp count data is part of a time-series analysis (Figure 5), thus dependence among observations is a potential problem.
+
+```{r Figure_5, echo=FALSE, fig.height=3 , fig.width=6, fig.cap="Carp count time-series."}
+plot(Delta$LFC~Delta$DATETIME,type="l",ylab="Carp count",xlab="Date")
+```
+
+ Figure 6 displays the autocorelation between lags for the carp count data and confirms that we have dependence among observations---all lags shown are significantly correlated. At lag 1, the correlation of 0.78 exponentially diminishes at larger lags is suggesting of a stationary autoregressive model. 
+ 
+```{r Figure_6, echo=FALSE, fig.height=4,fig.width=7.5,fig.cap= "(a) Autocorrelation function plot and (b) Partial autocorrelation function plot for carp count data. The blue dashed lines represents significant correlations such that any lags greater than than the positive blue line or less than the negative blue line are significantly correlated"}
+op<-par(mfrow=c(1,2))
+acf(Delta$LFC,main="")
+mtext("(a)",font=2, side = 3,line=-1.1, at=32)
+pacf(Delta$LFC,main="")
+mtext("(b)",font=2, side = 3,line=-1.1, at=32)
+```
+
+To determine the order of the autoregressive process we can examine the partial autocorrelation function plot (Figure 6b). We see that significant partial autocorrelation up to lag 3 which suggests that a third order autoregressive process (AR3) could be used to model the data.
+
+
+##7. Model fitting
+
+###a) Zero-inflated models
+
+This data set has a few problems to overcome. first, we are dealing zero inflated counts so we need a model that can handle the overdispersion caused by the zeros---I will start with a zero-inflated poisson model. Second, we have dependence among observations which will need to be addressed in order to avoid unrealistic standard errors and false positives---I will start with adding a smoothed trend term for time. Lastly, we have non-linear relationships between our count variable and explanotory vairables discharge and temperature---I have added quadratic terms to account for these relationships. Lets take a look at our intial model:
+
+$$Y_i \sim \text{Poisson}(\mu_i)$$
+
+where $Y_i$ is Poisson distributed with mean $\mu_i$ is a function of the envrionmental variables:
+
+$$
+\begin{aligned}
+\log(\mu_i) = &\log(Adjusted Area_i) + \beta_1 \times Discharge_i + \beta_2 \times Discharge^{2}_i + \beta_3 \times Temperature_i \\
+&+ \beta_4 \times Temperature^{2}_i + \beta_5  \times Pelicans_i + \beta_6 \times Hour_i + \beta_7 \times Hour^{2}_i \\
+&+ \beta_8 \times f(Time_i)
+\end{aligned}
+$$
+
+where $\log(Adjusted Area_i)$ is our offset that controls for the changing area in the picture frame as well as obstruction due to dead fish or pelicans, $Discharge_i$ and its quadratic $Discharge^{2}_i$ are discharge in cm s^-1^, $Temperature_i$ and its quadratic $Temperature^{2}_i$ are temperature in &deg;C, $Pelicans_i$ is the number of pelicans in the frame, and $f(Time_i)$ is the natural cubic spline (df=3) function for time.
+
+$$Z_i \sim \text{Binomial}(1, \pi_i)$$
+
+where $\pi_i$ is the probability of occurence such that $var(Y_i) = \pi_i \times (1-\pi_i)$ and $\pi_i$ is a function of the envrionmental variables:
+
+$$
+\begin{aligned}
+\text{logit}(\pi_i) = &\beta_1 \times Discharge_i + \beta_2 \times Discharge^{2}_i + \beta_3 \times Temperature_i + \beta_4 \times Temperature^{2}_i \\
+&+ \beta_5  \times Pelicans_i + \beta_6 \times Hour_i + \beta_7 \times Hour^{2}_i+ \beta_8 \times f(Time_i) \\ 
+&+ \beta_9 \times Exposure_i + \beta_10 \times Water Clarity_i + \beta_11 \times Image Clarity_i
+\end{aligned}
+$$
+
+where several variables are the same as in the Poisson model with the additon of $Exposure_i$ for camerea exposure level of the picture, $Water Clarity_i$ for water clarity level in the picture, and $Image Clairty_i$ for the image clarity level of each picture.
+
+```{r fit1, echo=FALSE, message=FALSE}
+require(pscl)
+library(splines)
+
+
+### NOTE: the model statement before the pipe "|" are the count predictors and
+###       after the pipe are the logistic or zero predictors; these can have 
+###       different variables
+
+
+fm2<-formula(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp+I(Temp^2)+Pelicans+Hour+I(Hour^2)+ns(Time,df=3)|Discharge+I(Discharge^2)+Temp+I(Temp^2)+Hour+I(Hour^2)+ns(Time,df=3)+Pelicans+fExposure+fWaterClarity+fImageClarity)
+
+zip1<-zeroinfl(fm2,dist="poisson",data=Z)
+
+
+
+fit<-zip1
+```
+
+```{r, echo=FALSE}
+summary(fit)
+
+```
+
+We added quadratic terms for discharge and temperature so I will double check the variance inflation factors to ensure we do not have collinearity.
+
+```{r,echo=FALSE}
+
+
+zz=vif(glm(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp+I(Temp^2)+Pelicans+Hour+I(Hour^2)+ns(Time,df=3),family="poisson",data=Z))
+data.frame(VIF=zz[,3])
+```
+
+The temperature and temperature^2^ covariates are correlated as are hour and hour^2^, let's centre these variables and re-test for collinearity.
+
+```{r, echo=FALSE}
+#Centre our explanitory variables
+Z$Temp.c<-with(Z,Temp-mean(Temp))
+Z$Hour.c<-with(Z,Hour-mean(Hour))
+zz=vif(glm(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+Hour.c+I(Hour.c^2)+ns(Time,df=3),family="poisson",data=Z))
+data.frame(VIF=zz[,3])
+```
+
+Now let's re-run the zero inflated model to see if our results changed.
+
+```{r, echo=FALSE}
+zip<-zeroinfl(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+ns(Time,df=3)|Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+ns(Time,df=3)+Pelicans+fExposure+fWaterClarity+fImageClarity,dist="poisson",data=Z)
+
+summary(zip)
+
+```
+
+The zero inflation poisson model uses an offset of *adjArea* which is the percent of unobstructed frame multipled by the maximum area of the frame to change our raw count into a density (fish m^-2^). We can see that our model has several non-significant predictors in the zero-inflation model including discharge, discharge^2^ and 2 of the time variables natural splines. Before we start model selection we should check if the zero-inflated poisson model still has significant overdispersion. This is done by comparing the same model formula in a zero-inflated negative binomial model using the likelihood ratio test.
+
+
+
+where $Y_i$ is a $\theta$ is the overdispersion parameter such that $var(Y) = \mu + \frac{\mu^{2}}{\theta}$ and $\mu_i$ is a function of the envrionmental variables:
+
+
+```{r zinb,message=FALSE}
+
+zinb<-zeroinfl(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)
+               +Pelicans+ns(Time,df=3)|Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)
+               +ns(Time,df=3)+Pelicans+fExposure+fWaterClarity+fImageClarity,
+               dist="negbin", data=Z)
+library(lmtest)
+lrtest(zip,zinb)
+AIC(zip,zinb)
+
+```
+
+The likelihood ratio test and AIC comparison reveal the zero-inflated negative binomial model performs significantly better than the zero-inflated poisson model. Now lets examine the output of our zero-inflated negative binomial model:
+
+```{r,echo=FALSE}
+summary(zinb)
+fit=zinb
+```
+
+Looks like we still have some non-significant terms. I will sequentially remove predictors until they are all significant predictors in the model. First, I will remove Discharge^2^ from the zero model because it has the highest *P-values* in the zero part of the model. I will continue to sequentially remove insignificant parameters (time and Discharge) until all parameters are significant. Here is the resulting model: 
+
+```{r,echo=FALSE}
+zinb2<-zeroinfl(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+ns(Time,df=3)|Temp.c+I(Temp.c^2)+Pelicans+fExposure+fWaterClarity+fImageClarity,dist="negbin",data=Z)
+summary(zinb2)
+```
+
+Now that all out our predictors are significant let's compare our new model with the full model.
+
+```{r}
+
+lrtest(zinb,zinb2)
+AIC(zinb,zinb2)
+
+```
+
+Both the likelihood ratio test and AIC comparison reveal the full model is a better fit than the updated model, even with non significant parameters. Lets examine the diagnostics plot for the full model to see if the model is valid (Figure 7).
+
+```{r Figure_7, echo=FALSE, fig.cap = "Model diagnostic plots. **a)** Pearson residuals versus fitted values, we should not see any clear pattern. **b)** histogram of pearson residuals, we should see residuals normally distributed around 0. **c)** Auto-correlation function of residuals and **d)** Partial autocorrelation function, vertical bars should be between the two horizontal blue lines if resdiuals are indpendent."}
+fit<-zinb2
+m<-matrix(c(1,2,
+            3,4),2,2,byrow=TRUE)
+layout(m)
+
+#figure 8 a)
+op<-par(mar = c(4,5,1,0.5))
+plot(fitted(fit),residuals(fit,type="pearson"),ylab="Pearson Residuals",xlab="Fitted Values")
+mtext("(a)",font=2, side = 3,line=-1.1, at=45.7)
+#figure 8 b)
+op<-par(mar = c(4,5,1,0.5))
+hist(residuals(fit,type="pearson"),main="",xlab="Pearson Residuals")
+mtext("(b)",font=2, side = 3,line=-1.1, at=9.3)
+#figure 8 c)
+op<-par(mar = c(4,5,2,0.5))
+acf(residuals(fit,type="pearson"),main="")
+mtext("(c)",font=2, side = 3,line=-1.1, at=32)
+#figure 8 d)
+op<-par(mar = c(4,5,2,0.5))
+pacf(residuals(fit,type="pearson"),main="",ylim=c(0,1))
+mtext("(d)",font=2, side = 3,line=-1.1, at=32)
+par(op)
+
+```
+
+The diagnostic plots in figure 7 reveal that our model  has residual problems (figure 7 a and b) and does not meet assumptions of independence (Figure 7 c and d). The time spline does not seem to reduce the autocorrelation in the model likely due to the strong serial correlation. The residual plots reveal that our model is unable to capture some of the variability in the data. We can examine what may be causing this through plotting our response versus our predictors and highllighting the points with large residual errors (Figure 8).
+
+```{r Figure 8,echo=FALSE, fig.cap="Count vs predictor plots. Black dots are raw data, red dots are observations with residuals > 4 (i.e. poor fitting observsations in the model)"}
+m<-matrix(c(1,2,
+            3,4),2,2,byrow=TRUE)
+layout(m)
+
+plot(Count~Discharge,data=Z, pch=19, col=rgb(0,0,0,0.1))
+points(Count~Discharge,data=Z[residuals(zinb,type="pearson")>4,],pch=19,col=rgb(1,0,0,0.4))
+mtext("(a)",font=2, side = 3,line=-1.1, at=44)
+
+plot(Count~Temp,data=Z, pch=19, col=rgb(0,0,0,0.1))
+points(Count~Temp,data=Z[residuals(zinb,type="pearson")>4,],pch=19,col=rgb(1,0,0,0.4))
+mtext("(b)",font=2, side = 3,line=-1.1, at=22)
+
+plot(Count~Pelicans,data=Z, pch=19, col=rgb(0,0,0,0.1))
+points(Count~Pelicans,data=Z[residuals(zinb,type="pearson")>4,],pch=19,col=rgb(1,0,0,0.4))
+mtext("(c)",font=2, side = 3,line=-1.1, at=19.5)
+
+plot(Count~Time,data=Z, pch=19, col=rgb(0,0,0,0.1))
+points(Count~Time,data=Z[residuals(zinb,type="pearson")>4,],pch=19,col=rgb(1,0,0,0.4))
+mtext("(d)",font=2, side = 3,line=-1.1, at=775)
+
+```
+
+It appears from Figure 8a that all of the residual error is comming from an "interesting anomaly" of higher than expected fish counts at positive discharges >20 cm s^-1^. Unfortunately we do not have a variable to account for this occurence, therefore high residual error occurs at these points. If we take a closer look at the raw data you will notice that these points for the most part are clustered together in time (ie. lines 1730--1734 and lines 1752--1754), thus accounting for autocorrelation may rectify this problem. 
+
+```{r,echo=FALSE}
+Z[residuals(zinb,type="pearson")>4,]
+```
+
+Next let's add lagged response variables as predicters to the full model which will hopefully account for the autocorrelation among observations. I sequentially removed insignifcant predictors until the resulting model:
+
+```{r, echo=FALSE,message=FALSE}
+library(ZIM)
+AR1<-bshift(Z$Count,1)
+AR2<-bshift(Z$Count,2)
+AR3<-bshift(Z$Count,3)
+
+zinb3<-zeroinfl(Count~offset(log(adjArea))+AR1+AR2+AR3+Discharge+I(Discharge^2)+Temp.c+Pelicans+Time|AR1+Temp.c+I(Temp.c^2)+Pelicans+fWaterClarity+fImageClarity+Time,dist="negbin",data=Z,x=TRUE)
+
+summary(zinb3)
+```
+
+If we look at the diagnostic plots we see that we have much more heteroskedacity in the residuals (figure 9a), but the addition of lagged response predictors has reduced the autocorrelation (Figure 9c and d), although significant autocorrelation still occurs.  
+
+```{r Figure_9, echo=FALSE, fig.cap = "Model diagnostic plots. **a)** Pearson residuals versus fitted values, we should not see any clear pattern. **b)** histogram of pearson residuals, we should see residuals normally distributed around 0. **c)** Auto-correlation function of residuals and **d)** Partial autocorrelation function, vertical bars should be between the two horizontal blue lines if resdiuals are indpendent."}
+fit<-zinb3
+m<-matrix(c(1,2,
+            3,4),2,2,byrow=TRUE)
+layout(m)
+
+#figure 9 a)
+op<-par(mar = c(4,5,1,0.5))
+plot(fitted(fit),residuals(fit,type="pearson"),ylab="Pearson Residuals",xlab="Fitted Values")
+mtext("(a)",font=2, side = 3,line=-1.1, at=127)
+#figure 9 b)
+op<-par(mar = c(4,5,1,0.5))
+hist(residuals(fit,type="pearson"),main="",xlab="Pearson Residuals")
+mtext("(b)",font=2, side = 3,line=-1.1, at=6)
+#figure 9 c)
+op<-par(mar = c(4,5,2,0.5))
+acf(residuals(fit,type="pearson"),main="")
+mtext("(c)",font=2, side = 3,line=-1.1, at=32)
+#figure 9 d)
+op<-par(mar = c(4,5,2,0.5))
+pacf(residuals(fit,type="pearson"),main="",ylim=c(0,1))
+mtext("(d)",font=2, side = 3,line=-1.1, at=32)
+par(op)
+
+```
+
+Lets see if our new model (zinb3) is any better than our original full model by compairing AIC.
+
+```{r, echo=FALSE}
+AIC(zinb,zinb3)
+```
+
+Looks like our new model has a better fit. We can use a sandwich estimator to generate more robust standard errors to account for both the heteroskedacity and autocorrelation in the residuals. We can then check that our predictors are still significant with better error estimates. 
+
+```{r, echo=FALSE}
+require(sandwich)
+coeftest(zinb3,vcov=sandwich)
+
+```
+
+Looks like all of the predictors remain significant. Let's compare the fitted model with the real data.
+
+```{r Figure_10, echo=FALSE, message=FALSE,fig.height=4, fig.cap="Carp counts (black circles) at each observation index overlayed by the fitted model zinb3 model (red line)."}
+plot(Z$Count,pch=19,cex=0.5,ylim=c(0,150),xlab="Observation",ylab="Carp count")
+mod<-predict(zinb3,type="response")
+lines(mod,col="red")
+
+```
+
+```{r Figure_11, echo=FALSE, fig.cap="Original carp count histogram (black lines) with zinb3 modelled histogram (blue circles) and zero-inflated negative binomial probability curve overlayed (red line)."}
+plot(table(Z$Count),ylab="Frequency",xlab="Carp Count",xlim=c(0,150),axes=FALSE)
+axis(1,seq(0,150,by=30))
+axis(2)
+points(table(round(predict(zinb3))),type="p",col="blue",pch=19,cex=0.5)
+lines(as.numeric(names(round(colSums(predict(zinb3, type = "prob"))))),round(colSums(predict(zinb3, type = "prob"))),col="red")
+
+```
+
+It appears the model does a decent job tracking the raw data (Figure 10 and 11) but over estimates counts when raw carp counts are high (Figure 10). A more appropriate model for the full dataset may be a zero-inflated generalized linear mixed model (ZIGLMM) or zero-inflated generalized additive mixed model (ZIGAMM) with an appropriate correlation error structure. These are complex models and the frontier of current statistical research, which unfortunately means these models are not readily available in R yet. Another approach to dealing with autocorrelated data is thinning the observations until they are independent, I will do this in the next section and compare results to our zero-inflated model with a sandwich estimator for autocorrelated data.
+
+###b) Data thinning
+
+I will attempt to deal with the auto-correlation by thinning the data---reducing the observations until they are not auto-correlated any more. Due to the high auto-correlation, the data is not found to be independent until thinned to every 25th observation (summarized in fig 12). This means that observations are indpendent of one another every 6.25 hours and reduces the total number of observations from `r dim(Z)[1]` to `r dim(Z[seq(1,dim(Z)[1],by=25),])[1]`.
+
+```{r Figure_12, echo=FALSE, fig.cap = "Auto-correlation function for (a) raw data, (b) thined by 8 observations, (c) thinned by 16 observations, and (d) thinned by 25 observations. Vertical bars should be between the two horizontal blue lines if resdiuals are indpendent."}
+m<-matrix(c(1,2,
+            3,4),2,2,byrow=TRUE)
+layout(m)
+
+#figure 9 a)
+op<-par(mar = c(4,5,1,0.5))
+acf(Z$Count,main="",xlim=c(0,20))
+mtext("(a)",font=2, side = 3,line=-1.1, at=19.5)
+#figure 9 b)
+op<-par(mar = c(4,5,1,0.5))
+acf(Z[seq(1,dim(Z)[1],by=8),]$Count,main="",xlim=c(0,20))
+mtext("(b)",font=2, side = 3,line=-1.1, at=19.5)
+#figure 9 c)
+op<-par(mar = c(4,5,2,0.5))
+acf(Z[seq(1,dim(Z)[1],by=16),]$Count,main="",xlim=c(0,20))
+mtext("(c)",font=2, side = 3,line=-1.1, at=19.5)
+#figure 9 d)
+op<-par(mar = c(4,5,2,0.5))
+acf(Z[seq(1,dim(Z)[1],by=25),]$Count,main="",xlim=c(0,20))
+mtext("(d)",font=2, side = 3,line=-1.1, at=19.5)
+par(op)
+
+```
+
+Now lets look at the thinned data. Figure 13 shows we are still potentally dealing with zero inflated and the relationships between the count data and covariates show similar relationships to the full dataset.
+
+``` {r Figure_13, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="a) Carp count frequency distribution. b--d) Relationshipo between Carp counts and covariates (grey circles) with a red LOESS trend line (span=0.67, df=1)."}
+
+m<-matrix(c(1,2,3,4),2,2,byrow=TRUE)
+layout(m)
+
+plot(table(Z[seq(1,dim(Z)[1],by=25),]$Count),xlab="Count",ylab="Frequency")
+mtext("(a)",font=2, side = 3,line=-1.1, at=80)
+
+plot(Count~Discharge,data=Z[seq(1,dim(Z)[1],by=25),], pch=19, col=rgb(0,0,0,0.2))
+fit=loess(Count ~ Discharge, data=Z[seq(1,dim(Z)[1],by=25),], family="gaussian",span=.67, degree=1)
+curve(predict(fit,data.frame(Discharge=x),type="response"),add=TRUE,lwd=2,col="red")
+mtext("(b)",font=2, side = 3,line=-1.1, at=34)
+
+plot(Count~Temp,data=Z[seq(1,dim(Z)[1],by=25),], pch=19, col=rgb(0,0,0,0.2))
+fit=loess(Count ~ Temp, data=Z[seq(1,dim(Z)[1],by=25),], family="gaussian",span=.67, degree=1)
+curve(predict(fit,data.frame(Temp=x),type="response"),add=TRUE,lwd=2,col="red")
+mtext("(c)",font=2, side = 3,line=-1.1, at=21.4)
+
+plot(Count~Pelicans,data=Z[seq(1,dim(Z)[1],by=25),], pch=19, col=rgb(0,0,0,0.2))
+fit=loess(Count ~ Pelicans, data=Z[seq(1,dim(Z)[1],by=25),], family="gaussian",span=.67, degree=1)
+curve(predict(fit,data.frame(Pelicans=x),type="response"),add=TRUE,lwd=2,col="red")
+mtext("(d)",font=2, side = 3,line=-1.1, at=13.8)
+
+```
+Lets see if we need a zero-inflated model to predict the number of zeros in our dataset
+
+```{r}
+#Poisson glm
+pois_thin<-glm(Count~Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+offset(log(adjArea)), family="poisson", data=Z[seq(1,dim(Z)[1],by=25),])
+
+#Negative binomial glm model
+negb_thin<-glm.nb(Count~Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+offset(log(adjArea)), data=Z[seq(1,dim(Z)[1],by=25),])
+
+#zero inflated poisson
+zip_thin<-zeroinfl(Count~Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+offset(log(adjArea))|Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+fExposure+fWaterClarity+fImageClarity,data=Z[seq(1,dim(Z)[1],by=25),])
+#zero inflated negative binomial
+zinb_thin<-zeroinfl(Count~Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+offset(log(adjArea))|Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+fExposure+fWaterClarity+fImageClarity,dist="negbin",data=Z[seq(1,dim(Z)[1],by=25),])
+
+
+```
+
+
+```{r,echo=FALSE}
+#expected number of zeros
+round(c("Obs" = sum(Z[seq(1,dim(Z)[1],by=25),]$Count < 1),
+      "Pois" = sum(dpois(0, fitted(pois_thin))),
+      "NB" = sum(dnbinom(0, mu = fitted(negb_thin), size = negb_thin$theta)),
+      "ZIP" = sum(predict(zip_thin, type = "prob")[,1]),
+      "ZINB" = sum(predict(zinb_thin, type = "prob")[,1])
+    ))
+```
+
+Looks like the zero inflated models are more accurate in determining the zeros, let's see if whether the zero-infalted poisson accounts for the overdispersion or if we need a zero-inflated negative binomial by conducting a liklihood ratio test and comparing AIC values.
+```{r}
+lrtest(zip_thin,zinb_thin)
+
+AIC(zip_thin,zinb_thin)
+```
+Looks like the ZINB is the better model. Model selection time. count remove temp.c + temp.c^2| zero remove image clarity + temp.c +temp.c^2+Pelicans + pelicans^2+ water clarity
+```{r}
+#zero inflated negative binomial
+zinb_thin2<-zeroinfl(Count~Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+offset(log(adjArea))|Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+fExposure+fWaterClarity+fImageClarity,dist="negbin",data=Z[seq(1,dim(Z)[1],by=25),])
+summary(zinb_thin2)
+
+zinb_thin2<-zeroinfl(Count~Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+offset(log(adjArea))|Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+fExposure+fWaterClarity+fImageClarity,dist="negbin",data=Z[seq(1,dim(Z)[1],by=25),])
+summary(zinb_thin2)
+
+zinb_thin2<-zeroinfl(Count~Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+offset(log(adjArea))|Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+fExposure+fWaterClarity+fImageClarity,dist="negbin",data=Z[seq(1,dim(Z)[1],by=25),])
+summary(zinb_thin2)
+
+```
+
+
+
+```{r Figure_14, echo=FALSE, fig.cap = "Model diagnostic plots. **a)** Pearson residuals versus fitted values, we should not see any clear pattern. **b)** histogram of pearson residuals, we should see residuals normally distributed around 0. **c)** Auto-correlation function of residuals and **d)** Partial autocorrelation function, vertical bars should be between the two horizontal blue lines if resdiuals are indpendent."}
+fit<-zinb_thin
+m<-matrix(c(1,2,
+            3,4),2,2,byrow=TRUE)
+layout(m)
+
+#figure 9 a)
+op<-par(mar = c(4,5,1,0.5))
+plot(fitted(fit),residuals(fit,type="pearson"),ylab="Pearson Residuals",xlab="Fitted Values")
+mtext("(a)",font=2, side = 3,line=-1.1, at=127)
+#figure 9 b)
+op<-par(mar = c(4,5,1,0.5))
+hist(residuals(fit,type="pearson"),main="",xlab="Pearson Residuals")
+mtext("(b)",font=2, side = 3,line=-1.1, at=6)
+#figure 9 c)
+op<-par(mar = c(4,5,2,0.5))
+acf(residuals(fit,type="pearson"),main="")
+mtext("(c)",font=2, side = 3,line=-1.1, at=32)
+#figure 9 d)
+op<-par(mar = c(4,5,2,0.5))
+pacf(residuals(fit,type="pearson"),main="",ylim=c(0,1))
+mtext("(d)",font=2, side = 3,line=-1.1, at=32)
+par(op)
+
+```
+
+
+
+```{r Figure_15, echo=FALSE, message=FALSE,fig.height=4, fig.cap="Carp counts (black circles) at each observation index overlayed by the fitted model zinb3 model (red line)."}
+plot(Z[seq(1,dim(Z)[1],by=25),]$Count,type="b",pch=19,cex=0.5,ylim=c(0,150),xlab="Observation",ylab="Carp count")
+
+mod<-predict(zinb_thin2,type="response")
+lines(mod,col="red")
+
+```
+
+
+
+```{r Figure_16, echo=FALSE, fig.cap="Original carp count histogram (black lines) with zinb3 modelled histogram (blue circles) and zero-inflated negative binomial probability curve overlayed (red line)."}
+plot(table(Z[seq(1,dim(Z)[1],by=25),]$Count),ylab="Frequency",xlab="Carp Count",ylim=c(0,20),xlim=c(0,100),axes=FALSE)
+axis(1,seq(0,100,by=30))
+axis(2)
+points(table(round(predict(zinb_thin2))),type="p",col="blue",pch=19,cex=0.5)
+lines(as.numeric(names(round(colSums(predict(zinb_thin2, type = "prob"))))),round(colSums(predict(zinb_thin2, type = "prob"))),col="red")
+
+```
+
+##c) Biologically relavent thinning
+
+```{r}
+library(mgcv)
+plot(Count~Hour,data=Z,pch=19,col=rgb(0,0,0,0.1))
+fit<-loess(Count~Hour,data=Z,family="gaussian",span=.25, degree=1)
+fit2<-gam(Count~s(Hour),data=Z,offset=log(adjArea),family="nb")
+
+fit2<-gam(Count~s(Discharge)+s(Temp)+Pelicans+s(DOY)+s(Hour),data=Z,offset=log(adjArea),family="nb")
+fit3<-gam(Count~s(Discharge)+Pelicans+s(DOY)+s(Hour),data=Z,offset=log(adjArea),family="nb")
+
+
+curve(predict(fit,data.frame(Hour=x),type="response"),add=TRUE,lwd=2,col="red")
+```
+
+
+
+##d) Gamm AR3 model
+
+
+#Summary of results
+
+#References
