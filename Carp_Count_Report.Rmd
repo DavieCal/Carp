@@ -1,7 +1,7 @@
 ---
 title: "Carp Count Data"
 author: "David T. Callaghan"
-date: '`r format(Sys.time(), ''%d %B, %Y'')`'
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   pdf_document:
     fig_caption: yes
@@ -9,17 +9,6 @@ output:
     fig_caption: yes
 bibliography: carpbib.bib
 ---
-
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-  TeX: { 
-      equationNumbers: { 
-            autoNumber: "all"
-      } 
-  }
-});
-</script>
-
 #Background
 
 The common carp *Cyprinus carpiro* (henceforth carp) is one of the most trans-located species in the world, established on every continent except Antarctica. Carp have two basic habitat requirements: 1) a shallow marsh environment with abundant vegetation; 2) a deeper area to retreat to during colder months [@mccrimmon_1968]. Carp spawn in shallow flooded areas with abundant fixed vegetation on which eggs are deposited [@crivelli_1981]. Spawning begins when water temperatures are ~15--16&deg;C [@crivelli_1981]. Carp generally spawn in the spring [@mccrimmon_1968], but can span March--August and even into October [@crivelli_1981]. Most carp show high site fidelity, but a small percentage of the population may also exhibit high mobility [@crook_2004;@stuart_2006].
@@ -300,33 +289,40 @@ To determine the order of the autoregressive process we can examine the partial 
 
 This data set has a few problems to overcome. first, we are dealing zero inflated counts so we need a model that can handle the overdispersion caused by the zeros---I will start with a zero-inflated poisson (ZIP) model. Second, we have dependence among observations which will need to be addressed in order to avoid unrealistic standard errors and false positives---I will start with adding a smoothed trend term for time. Lastly, we have non-linear relationships between our count variable and explanotory vairables discharge and temperature---I have added quadratic terms to account for these relationships. The following ZIP model is composed of two components that correspond to the two zero generating processes. The first process is governed by the Poisson distribbution that generates counts, which may contain zero's. This model compenent is defined as follows:
 
-$$Y_i \sim \text{Poisson}(\mu_i)$$
+\begin{equation} \label{eq:pois}
+Y_i \sim \text{Poisson}(\mu_i)
+\end{equation}
 
 where $Y_i$ is Poisson distributed with mean $\mu_i$ is a function of the envrionmental variables:
 
-$$
-\begin{aligned}
-\log(\mu_i) = &\log(Adjusted Area_i) + \beta_1 \times Discharge_i + \beta_2 \times Discharge^{2}_i + \beta_3 \times Temperature_i \\
-&+ \beta_4 \times Temperature^{2}_i + \beta_5  \times Pelicans_i + \beta_6 \times Hour_i + \beta_7 \times Hour^{2}_i \\
-&+ \beta_8 \times f(Time_i)
-\end{aligned}
-$$
+\begin{equation} \label{eq:log}
+  \begin{aligned}
+    \log(\mu_i) = &\log(Adjusted Area_i) + \beta_1 \times Discharge_i + \beta_2 
+    \times   Discharge^{2}_i + \beta_3 \times Temperature_i \\
+    &+ \beta_4 \times Temperature^{2}_i + \beta_5  \times Pelicans_i + \beta_6 \times Hour_i + 
+    \beta_7 \times Hour^{2}_i \\
+    &+ \beta_8 \times f(Time_i)
+  \end{aligned}
+\end{equation}
 
 where $\log(Adjusted Area_i)$ is our offset that controls for the changing area in the picture frame as well as obstruction due to dead fish or pelicans, $Discharge_i$ and its quadratic $Discharge^{2}_i$ are discharge in cm s^-1^, $Temperature_i$ and its quadratic $Temperature^{2}_i$ are temperature in &deg;C, $Pelicans_i$ is the number of pelicans in the frame, $Hour_i$ and its quadratic $Hour^{2}_i$ are the hour of the day the count is observed, and $f(Time_i)$ is the natural cubic spline (df=3) function for time. 
 
 The second process is governed by a binomial distribution that generates zero's. This model component is defined as follows:
 
-$$Z_i \sim \text{Binomial}(1, \pi_i)$$
+\begin{equation} \label{eq:binom}
+  Z_i \sim \text{Binomial}(1, \pi_i)
+\end{equation}
 
 where $\pi_i$ is the probability of false zero's such that $var(Y_i) = \pi_i \times (1-\pi_i)$ and $\pi_i$ is a function of the envrionmental variables:
 
-$$
-\begin{aligned}
-\text{logit}(\pi_i) = &\beta_1 \times Discharge_i + \beta_2 \times Discharge^{2}_i + \beta_3 \times Temperature_i + \beta_4 \times Temperature^{2}_i \\
-&+ \beta_5  \times Pelicans_i + \beta_6 \times Hour_i + \beta_7 \times Hour^{2}_i+ \beta_8 \times f(Time_i) \\ 
-&+ \beta_9 \times Exposure_i + \beta_10 \times Water Clarity_i + \beta_11 \times Image Clarity_i
-\end{aligned}
-$$
+\begin{equation} \label{eq:logit}
+  \begin{aligned}
+    \text{logit}(\pi_i) = &\beta_1 \times Discharge_i + \beta_2 \times Discharge^{2}_i + \beta_3     \times Temperature_i + \beta_4 \times Temperature^{2}_i \\
+    &+ \beta_5  \times Pelicans_i + \beta_6 \times Hour_i + \beta_7 \times Hour^{2}_i+ \beta_8      \times f(Time_i) \\ 
+    &+ \beta_9 \times Exposure_i + \beta_10 \times Water Clarity_i + \beta_11 
+    \times Image   Clarity_i
+  \end{aligned}
+\end{equation}
 
 where several variables are the same as in the Poisson model component with the additon of $Exposure_i$ for camerea exposure level of the picture, $Water Clarity_i$ for water clarity level in the picture, and $Image Clairty_i$ for the image clarity level of each picture.
 
@@ -356,7 +352,7 @@ summary(fit)
 
 ```
 
-We added quadratic terms for discharge and temperature so I will double check the variance inflation factors to ensure we do not have collinearity.
+We added quadratic terms for $Discharge_i$ and $Temperature_i$ so I will double check the variance inflation factors to ensure we do not have collinearity.
 
 ```{r,echo=FALSE}
 
@@ -365,7 +361,7 @@ zz=vif(glm(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp+I(Temp^2)+Pe
 data.frame(VIF=zz[,3])
 ```
 
-The temperature and temperature^2^ covariates are correlated as are hour and hour^2^, let's centre these variables and re-test for collinearity.
+The $Temperature_i$ and $Temperature^{2}_i$ covariates are correlated as are $Hour_i$ and $Hour^{2}_i$, let's centre these variables and re-test for collinearity.
 
 ```{r, echo=FALSE}
 #Centre our explanitory variables
@@ -384,17 +380,21 @@ summary(zip)
 
 ```
 
-We can see that our model has several non-significant predictors in the zero-inflation model including Discharge, Discharge^2^, Hour, Hour^2^ and 2 of the time variables natural splines. Before we start model selection we should check if the zero-inflated poisson model still has significant overdispersion. This is done by comparing the same model formula in a zero-inflated negative binomial model using the likelihood ratio test. The new model will be similar to 
+We can see that our model has several non-significant predictors in the zero-inflation model including Discharge, Discharge^2^, Hour, Hour^2^ and 2 of the time variables natural splines. Before we start model selection we should check if the zero-inflated poisson model still has significant overdispersion. This is done by comparing the same model formula in a zero-inflated negative binomial (ZINB) model using the likelihood ratio test. The ZINB model similar to the ZIP model with the only difference being the count component of the model being defined as follows:
 
+\begin{equation} \label{eq:nb}
+  Y_i \sim \text{Negative Binomial}(\mu_i; \theta)
+\end{equation}
 
+where $Y_i$ is a $\theta$ is the overdispersion parameter such that $var(Y) = \mu + \frac{\mu^{2}}{\theta}$ and $\mu_i$ is a function of the envrionmental variables as shown in equation \ref{eq:log}.
 
-where $Y_i$ is a $\theta$ is the overdispersion parameter such that $var(Y) = \mu + \frac{\mu^{2}}{\theta}$ and $\mu_i$ is a function of the envrionmental variables:
-
+Now lets run the likelihood ratio test to determine if overdispersion is still an issue in the model.
 
 ```{r zinb,message=FALSE}
 
 zinb<-zeroinfl(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)
-               +Pelicans+ns(Time,df=3)|Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)
+               +Pelicans+Hour.c+I(Hour.c^2)+ns(Time,df=3)|
+                 Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Hour.c+I(Hour.c^2)
                +ns(Time,df=3)+Pelicans+fExposure+fWaterClarity+fImageClarity,
                dist="negbin", data=Z)
 library(lmtest)
@@ -403,14 +403,14 @@ AIC(zip,zinb)
 
 ```
 
-The likelihood ratio test and AIC comparison reveal the zero-inflated negative binomial model performs significantly better than the zero-inflated poisson model. Now lets examine the output of our zero-inflated negative binomial model:
+The likelihood ratio test and AIC comparison reveal the ZINB model performs significantly better than the ZIP model. Now lets examine the output of our ZINB model:
 
 ```{r,echo=FALSE}
 summary(zinb)
 fit=zinb
 ```
 
-Looks like we still have some non-significant terms. I will sequentially remove predictors until they are all significant predictors in the model. First, I will remove Discharge^2^ from the zero model because it has the highest *P-values* in the zero part of the model. I will continue to sequentially remove insignificant parameters (time and Discharge) until all parameters are significant. Here is the resulting model: 
+Looks like we still have some non-significant terms. I will sequentially remove predictors until they are all significant predictors in the model. First, I will remove $Hour.c_i$ as well as its quadratic, $Hour.c^{2}_i$ (even though it is significant) from the count component of the model and $Hour^{2}_i$ from the zero model because it has the highest *P-value* in the zero part of the model. I will continue to sequentially remove insignificant parameters (Hour, Time and Discharge) until all parameters are significant. Here is the resulting model: 
 
 ```{r,echo=FALSE}
 zinb2<-zeroinfl(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+ns(Time,df=3)|Temp.c+I(Temp.c^2)+Pelicans+fExposure+fWaterClarity+fImageClarity,dist="negbin",data=Z)

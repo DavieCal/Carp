@@ -1,0 +1,1340 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+  \newcommand{\euro}{€}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\PassOptionsToPackage{usenames,dvipsnames}{color} % color is loaded by hyperref
+\hypersetup{unicode=true,
+            pdftitle={Carp Count Data},
+            pdfauthor={David T. Callaghan},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{{#1}}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{{#1}}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\ImportTok}[1]{{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{{#1}}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{{#1}}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{{#1}}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{{#1}}}}
+\newcommand{\BuiltInTok}[1]{{#1}}
+\newcommand{\ExtensionTok}[1]{{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{{#1}}}
+\newcommand{\RegionMarkerTok}[1]{{#1}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{{#1}}}}
+\newcommand{\NormalTok}[1]{{#1}}
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+  \title{Carp Count Data}
+  \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+  \author{David T. Callaghan}
+  \preauthor{\centering\large\emph}
+  \postauthor{\par}
+  \predate{\centering\large\emph}
+  \postdate{\par}
+  \date{04 November, 2016}
+
+
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\section{Background}\label{background}
+
+The common carp \emph{Cyprinus carpiro} (henceforth carp) is one of the
+most trans-located species in the world, established on every continent
+except Antarctica. Carp have two basic habitat requirements: 1) a
+shallow marsh environment with abundant vegetation; 2) a deeper area to
+retreat to during colder months {[}@mccrimmon\_1968{]}. Carp spawn in
+shallow flooded areas with abundant fixed vegetation on which eggs are
+deposited {[}@crivelli\_1981{]}. Spawning begins when water temperatures
+are \textasciitilde{}15--16°C {[}@crivelli\_1981{]}. Carp generally
+spawn in the spring {[}@mccrimmon\_1968{]}, but can span March--August
+and even into October {[}@crivelli\_1981{]}. Most carp show high site
+fidelity, but a small percentage of the population may also exhibit high
+mobility {[}@crook\_2004;@stuart\_2006{]}.
+
+\section{Objectives}\label{objectives}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\item
+  Determine what environmental variables (i.e.~temperature and
+  discharge) drive carp migration into the Delta Marsh using camera trap
+  count data.
+\item
+  Determine the effect of sampling frequency on model results.
+\end{enumerate}
+
+\section{Data exploration}\label{data-exploration}
+
+I will loosely follow the protocol by Zuur et al. {[}-@zuur\_2010{]} for
+exploring the data to avoid common statistical problems including type I
+(i.e.~rejecting the null hypothesis when it is true) or type II errors
+(i.e.~failure to reject the null hypothesis when it is untrue).
+
+\subsection{1. Data Distribution}\label{data-distribution}
+
+A good place to start exploring the data is looking at the distribution
+of our response variable---carp counts. The distribution will give us a
+good indication of what kind of analysis we should use to deal with our
+data and if any problems may need to be addressed (i.e.~many zeros).
+Because we are modelling count data, a generalized linear model (GLM) is
+an appropriate analysis {[}@zuur\_2010{]}. The Poisson or negative
+binomial distributions are what we would expect. Looking at Figure 1, we
+quickly realize we are dealing with many zeros! Therefore, a Poisson or
+negative binomial GLM will likely produce biased parameter estimates and
+standard errors as well as over-dispersion. A zero-inflated or
+zero-altered GLM will likely be an appropriate analyses here.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_1-1.pdf}
+\caption{(\#fig:Figure\_1)Frequency distribution of raw (unadjusted)
+carp count data. Notice the large number of zeros---a good indication of
+zero inflation}
+\end{figure}
+
+\subsection{2. Dealing with the zeros}\label{dealing-with-the-zeros}
+
+Lets make sure we are dealing with true zero inflation. I have run the
+following models to see which ones produce similar number of zeros as
+our data:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Poisson glm}
+\NormalTok{pois<-}\KeywordTok{glm}\NormalTok{(Count~Discharge+Temp+Pelicans+Time,}\DataTypeTok{offset=}\KeywordTok{log}\NormalTok{(adjArea), }\DataTypeTok{family=}\StringTok{"poisson"}\NormalTok{, }\DataTypeTok{data=}\NormalTok{Z)}
+
+
+\CommentTok{#Negative binomial glm model}
+\NormalTok{negb<-}\KeywordTok{glm.nb}\NormalTok{(Count~Discharge+Temp+Pelicans+Time+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea)),}\DataTypeTok{data=}\NormalTok{Z)}
+
+\CommentTok{#zero-inflated formula}
+\NormalTok{fm1<-}\KeywordTok{formula}\NormalTok{(Count~Discharge+Temp+Pelicans+Time+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea))}
+            \NormalTok{|Discharge+Temp+Pelicans+Time+fExposure+fWaterClarity+fImageClarity)}
+\CommentTok{#zero inflated poisson}
+\NormalTok{zip<-}\KeywordTok{zeroinfl}\NormalTok{(fm1,}\DataTypeTok{data=}\NormalTok{Z)}
+
+\CommentTok{#zero inflated negative binomial}
+\NormalTok{zinb<-}\KeywordTok{zeroinfl}\NormalTok{(fm1, }\DataTypeTok{dist=}\StringTok{"negbin"}\NormalTok{,}\DataTypeTok{data=}\NormalTok{Z)}
+
+\CommentTok{#zero altered poisson}
+\NormalTok{zap<-}\KeywordTok{hurdle}\NormalTok{(fm1,}\DataTypeTok{data=}\NormalTok{Z)}
+
+\CommentTok{#zero altered negative binomial}
+\NormalTok{zanb<-}\KeywordTok{hurdle}\NormalTok{(fm1,}\DataTypeTok{dist=}\StringTok{"negbin"}\NormalTok{,}\DataTypeTok{data=}\NormalTok{Z)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  Obs Pois   NB  ZIP ZINB  ZAP ZANB 
+##  373    4  178  373  371  373  373
+\end{verbatim}
+
+It is quite apparent that only the zero-inflated models (ZIP, ZAP, ZINB
+and ZANB) have similar zero counts to our observations.
+
+How we deal with the zeros is related to what kind of zeros we have. In
+general, techniques for dealing with zero inflation have two parts: a
+binomial part that deals with the zeros and a Poisson (or negative
+binomial) part that deals with the count data. zero-inflated models, or
+mixture-models, split the zeros into true zeros (fish truly absent) and
+false zeros (fish present but not seen). The true zeros are modelled in
+the Poisson GLM, while the process generating the false zeros is
+modelled in the binomial GLM. Two-part or hurdle models do not
+discriminate between true and false zeros, the presence of an animal is
+the result of some covariate mechanism crossing a hurdle. The hurdle
+model is most appropriate when there is little chance of missing any
+items in the counts {[}@verhoef\_2007{]}. In our case, some zeros may be
+false zeros (missed counts)---as a result of image obstruction,
+exposure, water clarity or image clarity---or true zeros (i.e.~fish are
+not present because conditions are not appropriate). Therefore, I feel a
+zero-inflated mixture-model would best deal with the zero inflation.
+
+\subsection{3. Outliers}\label{outliers}
+
+Now that we have an idea of what analysis we can perform lets look at
+the data in more detail. Outliers can be a problem for Poisson GLM
+(similarly for zero-inflated models) analyses and may cause
+over-dispersion. I will define outliers here as observations which
+values are relatively larger or smaller to the majority of of
+observations. Here I show a boxplot (Figure 2a) and a Cleveland dotplot
+(Figure 2b ) of 2222 carp count observations. The boxplot visualizes the
+median and spread of the data. Observations outside of the whiskers are
+labelled as outliers. Figure 1a shows that there are potentially 9
+outliers. A good way to check if these are in fact outliers is a
+Cleveland dot plot (Figure 2b), in this graph the row number of
+observations is plotted vs.~the frequency of carp, providing more
+detailed information than a boxplot. Figure 2b reveals that the possible
+outliers are not really outliers at all because they follow the pattern
+of peaks displayed by the observations.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_2-1.pdf}
+\caption{(\#fig:Figure\_2)(a) Boxplot of carp frequency counts from 2222
+observations taken at the same location. The line in the middle of the
+box represents the median, and the lower and upper ends of the box are
+the 25\% and 75\% quartiles respectively. The lines indicate 1.5 times
+the size of the hinge, which is the 75\% minus 25\% quartiles. Points
+beyond these lines are considered to be outliers. \textbf{(b)} Cleveland
+dot plot of the same data. The horizontal axis represents the carp
+counts, and the vertical axis corresponds to the order of the data.}
+\end{figure}
+
+Figure 2 displays a multi-panel Cleveland dot plot for our carp count
+data and all of our potential covariates that could influence the
+counts, including water discharge, water temperature, and time; as well
+as covariates that may influence the zeros (or false zeros) including
+dead fish, pelican counts, exposure factor, image clarity factor, water
+clarity factor and percent obstructed. For the most part the covariates
+look fine except for the large values (points far to the right) in the
+dead fish and percent obstructed panels. It appears the large number of
+dead fish obstructed 83\% of the image. The large number of dead fish is
+a rare observation and may be influential on our parameter estimates. We
+will have to investigate how sensitive the model is to these large
+values and decide if this observation is a candidate for removal.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_3-1.pdf}
+\caption{(\#fig:Figure\_3)Multi-panel Cleveland dotplot for carp counts
+and ten covariates that may influence the counts. The plots are ordered
+by date along the y-axis. Notice the possible influential values in
+Obstructed and Dead---this observation may be a candidate for removal if
+model parameters are found to be sensitive to these inputs.}
+\end{figure}
+
+Over the study duration, the viewable area of the picture frame ranges
+from 3.6328499--4.3961477 m\textsuperscript{2}. Further reduction in
+visible area as a result of obstructions, such as pelicans and dead fish
+(See Figure 3), required an offset for adjusted area (picture frame area
+X percent visible area). The results of our model will therefore be a
+density Carp per m\textsuperscript{2}.
+
+\subsection{4. Collinearity among
+covariates}\label{collinearity-among-covariates}
+
+Ignoring collinearity among covariates may lead to a confusing
+statistical output with nothing significant. This is because
+collinearity results in inflated standard errors of parameters which in
+turn increase \emph{P}-values, making it difficult to detect an effect.
+We can easily test for collinearity by looking at the variance inflation
+factors (VIF), covariates with VIF greater than 3 will be sequentially
+removed. Unfortunately the \emph{vif} function from the \emph{car}
+package does not allow zero-inflated models---thus, I have split up our
+covariates into two groups: Poisson covariates including water
+discharge, water temperature, pelican count, hour of day, and time; as
+well as binomial covariates including water discharge, water
+temperature, hour of day, time, pelican count, exposure factor, image
+clarity factor and water clarity factor. This way I can examine the
+Poisson covariate VIF in a Poisson GLM and the binomial covariate VIF in
+a binomial GLM using the \emph{vif} function.
+
+\begin{verbatim}
+##                VIF
+## Discharge 1.228866
+## Temp      1.265861
+## Pelicans  1.127493
+## Hour      1.176337
+## Time      1.435828
+\end{verbatim}
+
+Notice that all of our Poisson covariates VIF are \textless{} 3. No
+collinearity! Now let's look at the binomial side.
+
+\begin{verbatim}
+##                    VIF
+## Discharge     1.180768
+## Temp          1.235949
+## Hour          1.070820
+## Time          1.137549
+## Pelicans      1.556906
+## fExposure     1.476564
+## fWaterClarity 1.147495
+## fImageClarity 1.039046
+\end{verbatim}
+
+Our eight covariates do not reveal any collinearity. Next we will
+examine the relationships between our covariates and the response
+variable.
+
+\subsection{5. Relationships Y \& X}\label{relationships-y-x}
+
+Looking at the relationship between Y (carp counts) and X covariates
+(discharge, temperature, pelicans, hour and time) we begin to see strong
+nonlinear effects of discharge and temperature (Figure 4). Abundance
+appears to increase at negative discharges close to 0 and temperatures
+between 16--20°C. These nonlinear trends should be modelled with an
+additive model (i.e.~GAM) or linear model with qudratic relationships.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_4-1.pdf}
+\caption{(\#fig:Figure\_4)Relationship between carp counts and four
+potential covariates. The red line represents a LOESS smoother
+(span=0.67,degree=1) to visualize relationships between carp counts and
+covariates.}
+\end{figure}
+
+\subsection{6. Response variable
+independence}\label{response-variable-independence}
+
+A very important assumption of most statistical techniques is
+independence among observations. Ignoring dependence among observations
+(autocorrelation) can lead to underestimates of standard errors and
+increased false positives. The carp count data is part of a time-series
+analysis (Figure 5), thus dependence among observations is a potential
+problem.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_5-1.pdf}
+\caption{(\#fig:Figure\_5)Carp count time-series.}
+\end{figure}
+
+Figure 6 displays the autocorelation between lags for the carp count
+data and confirms that we have dependence among observations---all lags
+shown are significantly correlated. At lag 1, the correlation of 0.78
+exponentially diminishes at larger lags is suggesting of a stationary
+autoregressive model.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_6-1.pdf}
+\caption{(\#fig:Figure\_6)(a) Autocorrelation function plot and (b)
+Partial autocorrelation function plot for carp count data. The blue
+dashed lines represents significant correlations such that any lags
+greater than than the positive blue line or less than the negative blue
+line are significantly correlated}
+\end{figure}
+
+To determine the order of the autoregressive process we can examine the
+partial autocorrelation function plot (Figure 6b). We see that
+significant partial autocorrelation up to lag 3 which suggests that a
+third order autoregressive process (AR3) could be used to model the
+data.
+
+\subsection{7. Model fitting}\label{model-fitting}
+
+\subsubsection{a) Zero-inflated models}\label{a-zero-inflated-models}
+
+This data set has a few problems to overcome. first, we are dealing zero
+inflated counts so we need a model that can handle the overdispersion
+caused by the zeros---I will start with a zero-inflated poisson (ZIP)
+model. Second, we have dependence among observations which will need to
+be addressed in order to avoid unrealistic standard errors and false
+positives---I will start with adding a smoothed trend term for time.
+Lastly, we have non-linear relationships between our count variable and
+explanotory vairables discharge and temperature---I have added quadratic
+terms to account for these relationships. The following ZIP model is
+composed of two components that correspond to the two zero generating
+processes. The first process is governed by the Poisson distribbution
+that generates counts, which may contain zero's. This model compenent is
+defined as follows:
+
+\[Y_i \sim \text{Poisson}(\mu_i)\]
+
+where \(Y_i\) is Poisson distributed with mean \(\mu_i\) is a function
+of the envrionmental variables:
+
+\[
+\begin{aligned}
+\log(\mu_i) = &\log(Adjusted Area_i) + \beta_1 \times Discharge_i + \beta_2 \times Discharge^{2}_i + \beta_3 \times Temperature_i \\
+&+ \beta_4 \times Temperature^{2}_i + \beta_5  \times Pelicans_i + \beta_6 \times Hour_i + \beta_7 \times Hour^{2}_i \\
+&+ \beta_8 \times f(Time_i)
+\end{aligned}
+\]
+
+where \(\log(Adjusted Area_i)\) is our offset that controls for the
+changing area in the picture frame as well as obstruction due to dead
+fish or pelicans, \(Discharge_i\) and its quadratic \(Discharge^{2}_i\)
+are discharge in cm s\textsuperscript{-1}, \(Temperature_i\) and its
+quadratic \(Temperature^{2}_i\) are temperature in °C, \(Pelicans_i\) is
+the number of pelicans in the frame, \(Hour_i\) and its quadratic
+\(Hour^{2}_i\) are the hour of the day the count is observed, and
+\(f(Time_i)\) is the natural cubic spline (df=3) function for time.
+
+The second process is governed by a binomial distribution that generates
+zero's. This model component is defined as follows:
+
+\begin{equation}
+Z_i \sim \text{Binomial}(1, \pi_i)
+\end{equation}
+
+where \(\pi_i\) is the probability of false zero's such that
+\(var(Y_i) = \pi_i \times (1-\pi_i)\) and \(\pi_i\) is a function of the
+envrionmental variables:
+
+\[
+\begin{aligned}
+\text{logit}(\pi_i) = &\beta_1 \times Discharge_i + \beta_2 \times Discharge^{2}_i + \beta_3 \times Temperature_i + \beta_4 \times Temperature^{2}_i \\
+&+ \beta_5  \times Pelicans_i + \beta_6 \times Hour_i + \beta_7 \times Hour^{2}_i+ \beta_8 \times f(Time_i) \\ 
+&+ \beta_9 \times Exposure_i + \beta_10 \times Water Clarity_i + \beta_11 \times Image Clarity_i
+\end{aligned}
+\]
+
+where several variables are the same as in the Poisson model component
+with the additon of \(Exposure_i\) for camerea exposure level of the
+picture, \(Water Clarity_i\) for water clarity level in the picture, and
+\(Image Clairty_i\) for the image clarity level of each picture.
+
+Now lets run the full model:
+
+\begin{verbatim}
+## 
+## Call:
+## zeroinfl(formula = fm2, data = Z, dist = "poisson")
+## 
+## Pearson residuals:
+##    Min     1Q Median     3Q    Max 
+## -4.841 -1.116 -0.103  1.173 22.678 
+## 
+## Count model coefficients (poisson with log link):
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)       -4.879e+00  1.644e+00  -2.968 0.002994 ** 
+## Discharge         -5.198e-02  1.090e-03 -47.687  < 2e-16 ***
+## I(Discharge^2)    -2.648e-03  5.699e-05 -46.461  < 2e-16 ***
+## Temp               6.508e-01  1.838e-01   3.541 0.000398 ***
+## I(Temp^2)         -1.594e-02  5.080e-03  -3.137 0.001707 ** 
+## Pelicans          -6.722e-02  2.268e-03 -29.636  < 2e-16 ***
+## Hour               4.781e-02  6.247e-03   7.653 1.96e-14 ***
+## I(Hour^2)         -1.964e-03  2.248e-04  -8.737  < 2e-16 ***
+## ns(Time, df = 3)1  3.117e-01  2.179e-02  14.309  < 2e-16 ***
+## ns(Time, df = 3)2  3.472e-01  4.369e-02   7.947 1.91e-15 ***
+## ns(Time, df = 3)3 -2.929e-01  2.228e-02 -13.148  < 2e-16 ***
+## 
+## Zero-inflation model coefficients (binomial with logit link):
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)       14.0732668  4.9535826   2.841 0.004497 ** 
+## Discharge          0.0135421  0.0084213   1.608 0.107816    
+## I(Discharge^2)     0.0002217  0.0004187   0.529 0.596550    
+## Temp              -2.1355073  0.5764280  -3.705 0.000212 ***
+## I(Temp^2)          0.0630261  0.0168416   3.742 0.000182 ***
+## Hour              -0.0414407  0.0914800  -0.453 0.650547    
+## I(Hour^2)          0.0026470  0.0034330   0.771 0.440685    
+## ns(Time, df = 3)1  0.0040491  0.3458202   0.012 0.990658    
+## ns(Time, df = 3)2  0.6358551  0.6421993   0.990 0.322115    
+## ns(Time, df = 3)3  1.4050413  0.2691949   5.219 1.79e-07 ***
+## Pelicans           0.1470169  0.0338307   4.346 1.39e-05 ***
+## fExposure2        -0.9940159  0.3335769  -2.980 0.002884 ** 
+## fWaterClarity2     1.9844062  0.3194220   6.212 5.22e-10 ***
+## fWaterClarity3     3.6768693  0.3490605  10.534  < 2e-16 ***
+## fImageClarity2    -0.5967989  0.2652139  -2.250 0.024433 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Number of iterations in BFGS optimization: 36 
+## Log-likelihood: -1.207e+04 on 26 Df
+\end{verbatim}
+
+We added quadratic terms for discharge and temperature so I will double
+check the variance inflation factors to ensure we do not have
+collinearity.
+
+\begin{verbatim}
+##                        VIF
+## Discharge         1.335836
+## I(Discharge^2)    1.234152
+## Temp             17.364161
+## I(Temp^2)        17.434020
+## Pelicans          1.091240
+## Hour              6.295103
+## I(Hour^2)         6.292506
+## ns(Time, df = 3)  1.092270
+\end{verbatim}
+
+The temperature and temperature\textsuperscript{2} covariates are
+correlated as are hour and hour\textsuperscript{2}, let's centre these
+variables and re-test for collinearity.
+
+\begin{verbatim}
+##                       VIF
+## Discharge        1.335836
+## I(Discharge^2)   1.234152
+## Temp.c           1.221610
+## I(Temp.c^2)      1.073843
+## Pelicans         1.091240
+## Hour.c           1.121313
+## I(Hour.c^2)      1.004474
+## ns(Time, df = 3) 1.092270
+\end{verbatim}
+
+Now let's re-run the zero inflated model to see if our results changed.
+
+\begin{verbatim}
+## 
+## Call:
+## zeroinfl(formula = Count ~ offset(log(adjArea)) + Discharge + I(Discharge^2) + 
+##     Temp.c + I(Temp.c^2) + Pelicans + Hour.c + I(Hour.c^2) + ns(Time, 
+##     df = 3) | Discharge + I(Discharge^2) + Temp.c + I(Temp.c^2) + 
+##     Hour.c + I(Hour.c^2) + ns(Time, df = 3) + Pelicans + fExposure + 
+##     fWaterClarity + fImageClarity, data = Z, dist = "poisson")
+## 
+## Pearson residuals:
+##    Min     1Q Median     3Q    Max 
+## -4.841 -1.116 -0.103  1.173 22.678 
+## 
+## Count model coefficients (poisson with log link):
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)        1.936e+00  1.828e-02 105.878  < 2e-16 ***
+## Discharge         -5.198e-02  7.847e-04 -66.239  < 2e-16 ***
+## I(Discharge^2)    -2.648e-03  5.569e-05 -47.548  < 2e-16 ***
+## Temp.c             8.648e-02  3.726e-03  23.213  < 2e-16 ***
+## I(Temp.c^2)       -1.594e-02  1.503e-03 -10.603  < 2e-16 ***
+## Pelicans          -6.722e-02  2.268e-03 -29.636  < 2e-16 ***
+## Hour.c            -4.374e-03  1.108e-03  -3.949 7.86e-05 ***
+## I(Hour.c^2)       -1.964e-03  2.309e-04  -8.507  < 2e-16 ***
+## ns(Time, df = 3)1  3.117e-01  2.126e-02  14.662  < 2e-16 ***
+## ns(Time, df = 3)2  3.472e-01  4.323e-02   8.032 9.59e-16 ***
+## ns(Time, df = 3)3 -2.929e-01  2.151e-02 -13.614  < 2e-16 ***
+## 
+## Zero-inflation model coefficients (binomial with logit link):
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)       -4.0626903  0.5243180  -7.749 9.30e-15 ***
+## Discharge          0.0135415  0.0084576   1.601   0.1094    
+## I(Discharge^2)     0.0002217  0.0004199   0.528   0.5976    
+## Temp.c             0.0960925  0.0467001   2.058   0.0396 *  
+## I(Temp.c^2)        0.0630275  0.0150929   4.176 2.97e-05 ***
+## Hour.c             0.0288959  0.0156057   1.852   0.0641 .  
+## I(Hour.c^2)        0.0026468  0.0034189   0.774   0.4388    
+## ns(Time, df = 3)1  0.0040460  0.3479680   0.012   0.9907    
+## ns(Time, df = 3)2  0.6357785  0.6422389   0.990   0.3222    
+## ns(Time, df = 3)3  1.4050356  0.2680990   5.241 1.60e-07 ***
+## Pelicans           0.1470162  0.0336903   4.364 1.28e-05 ***
+## fExposure2        -0.9940228  0.3325707  -2.989   0.0028 ** 
+## fWaterClarity2     1.9844107  0.3222696   6.158 7.39e-10 ***
+## fWaterClarity3     3.6768711  0.3419980  10.751  < 2e-16 ***
+## fImageClarity2    -0.5968139  0.2636002  -2.264   0.0236 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Number of iterations in BFGS optimization: 35 
+## Log-likelihood: -1.207e+04 on 26 Df
+\end{verbatim}
+
+We can see that our model has several non-significant predictors in the
+zero-inflation model including Discharge, Discharge\textsuperscript{2},
+Hour, Hour\textsuperscript{2} and 2 of the time variables natural
+splines. Before we start model selection we should check if the
+zero-inflated poisson model still has significant overdispersion. This
+is done by comparing the same model formula in a zero-inflated negative
+binomial model using the likelihood ratio test. The new model will be
+similar to
+
+where \(Y_i\) is a \(\theta\) is the overdispersion parameter such that
+\(var(Y) = \mu + \frac{\mu^{2}}{\theta}\) and \(\mu_i\) is a function of
+the envrionmental variables:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{zinb<-}\KeywordTok{zeroinfl}\NormalTok{(Count~}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea))+Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)}
+               \NormalTok{+Pelicans+}\KeywordTok{ns}\NormalTok{(Time,}\DataTypeTok{df=}\DecValTok{3}\NormalTok{)|Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)}
+               \NormalTok{+}\KeywordTok{ns}\NormalTok{(Time,}\DataTypeTok{df=}\DecValTok{3}\NormalTok{)+Pelicans+fExposure+fWaterClarity+fImageClarity,}
+               \DataTypeTok{dist=}\StringTok{"negbin"}\NormalTok{, }\DataTypeTok{data=}\NormalTok{Z)}
+\KeywordTok{library}\NormalTok{(lmtest)}
+\KeywordTok{lrtest}\NormalTok{(zip,zinb)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Likelihood ratio test
+## 
+## Model 1: Count ~ offset(log(adjArea)) + Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + Hour.c + I(Hour.c^2) + ns(Time, 
+##     df = 3) | Discharge + I(Discharge^2) + Temp.c + I(Temp.c^2) + 
+##     Hour.c + I(Hour.c^2) + ns(Time, df = 3) + Pelicans + fExposure + 
+##     fWaterClarity + fImageClarity
+## Model 2: Count ~ offset(log(adjArea)) + Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + ns(Time, df = 3) | Discharge + I(Discharge^2) + 
+##     Temp.c + I(Temp.c^2) + ns(Time, df = 3) + Pelicans + fExposure + 
+##     fWaterClarity + fImageClarity
+##   #Df   LogLik Df  Chisq Pr(>Chisq)    
+## 1  26 -12071.9                         
+## 2  23  -8002.5 -3 8138.7  < 2.2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{AIC}\NormalTok{(zip,zinb)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##      df      AIC
+## zip  26 24195.76
+## zinb 23 16051.09
+\end{verbatim}
+
+The likelihood ratio test and AIC comparison reveal the zero-inflated
+negative binomial model performs significantly better than the
+zero-inflated poisson model. Now lets examine the output of our
+zero-inflated negative binomial model:
+
+\begin{verbatim}
+## 
+## Call:
+## zeroinfl(formula = Count ~ offset(log(adjArea)) + Discharge + I(Discharge^2) + 
+##     Temp.c + I(Temp.c^2) + Pelicans + ns(Time, df = 3) | Discharge + 
+##     I(Discharge^2) + Temp.c + I(Temp.c^2) + ns(Time, df = 3) + Pelicans + 
+##     fExposure + fWaterClarity + fImageClarity, data = Z, dist = "negbin")
+## 
+## Pearson residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.5831 -0.6786 -0.0962  0.5158 10.2340 
+## 
+## Count model coefficients (negbin with log link):
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)        1.8238906  0.0549784  33.175  < 2e-16 ***
+## Discharge         -0.0465465  0.0020347 -22.876  < 2e-16 ***
+## I(Discharge^2)    -0.0019242  0.0001266 -15.196  < 2e-16 ***
+## Temp.c             0.0987924  0.0101002   9.781  < 2e-16 ***
+## I(Temp.c^2)       -0.0091895  0.0042112  -2.182  0.02910 *  
+## Pelicans          -0.0717301  0.0065416 -10.965  < 2e-16 ***
+## ns(Time, df = 3)1  0.3738051  0.0692895   5.395 6.86e-08 ***
+## ns(Time, df = 3)2  0.3488192  0.1332084   2.619  0.00883 ** 
+## ns(Time, df = 3)3 -0.2904917  0.0654607  -4.438 9.09e-06 ***
+## Log(theta)         1.0230179  0.0401778  25.462  < 2e-16 ***
+## 
+## Zero-inflation model coefficients (binomial with logit link):
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)       -3.9480884  0.5412319  -7.295 2.99e-13 ***
+## Discharge          0.0129021  0.0085138   1.515 0.129661    
+## I(Discharge^2)     0.0005230  0.0004114   1.271 0.203643    
+## Temp.c             0.1219892  0.0458177   2.662 0.007756 ** 
+## I(Temp.c^2)        0.0663073  0.0151494   4.377 1.20e-05 ***
+## ns(Time, df = 3)1  0.1267602  0.3556590   0.356 0.721534    
+## ns(Time, df = 3)2  0.5440740  0.6514553   0.835 0.403624    
+## ns(Time, df = 3)3  1.3398428  0.2713473   4.938 7.90e-07 ***
+## Pelicans           0.1247192  0.0345787   3.607 0.000310 ***
+## fExposure2        -1.1465047  0.3394628  -3.377 0.000732 ***
+## fWaterClarity2     2.0799008  0.3633605   5.724 1.04e-08 ***
+## fWaterClarity3     3.7312532  0.3797125   9.827  < 2e-16 ***
+## fImageClarity2    -0.7313836  0.2748815  -2.661 0.007797 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Theta = 2.7816 
+## Number of iterations in BFGS optimization: 31 
+## Log-likelihood: -8003 on 23 Df
+\end{verbatim}
+
+Looks like we still have some non-significant terms. I will sequentially
+remove predictors until they are all significant predictors in the
+model. First, I will remove Discharge\textsuperscript{2} from the zero
+model because it has the highest \emph{P-values} in the zero part of the
+model. I will continue to sequentially remove insignificant parameters
+(time and Discharge) until all parameters are significant. Here is the
+resulting model:
+
+\begin{verbatim}
+## 
+## Call:
+## zeroinfl(formula = Count ~ offset(log(adjArea)) + Discharge + I(Discharge^2) + 
+##     Temp.c + I(Temp.c^2) + Pelicans + ns(Time, df = 3) | Temp.c + 
+##     I(Temp.c^2) + Pelicans + fExposure + fWaterClarity + fImageClarity, 
+##     data = Z, dist = "negbin")
+## 
+## Pearson residuals:
+##      Min       1Q   Median       3Q      Max 
+## -1.57077 -0.68924 -0.09733  0.51812  8.67596 
+## 
+## Count model coefficients (negbin with log link):
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)        1.8275225  0.0550115  33.221  < 2e-16 ***
+## Discharge         -0.0470943  0.0020299 -23.201  < 2e-16 ***
+## I(Discharge^2)    -0.0019839  0.0001228 -16.156  < 2e-16 ***
+## Temp.c             0.1001531  0.0101141   9.902  < 2e-16 ***
+## I(Temp.c^2)       -0.0089944  0.0042157  -2.134   0.0329 *  
+## Pelicans          -0.0718087  0.0065290 -10.999  < 2e-16 ***
+## ns(Time, df = 3)1  0.3761480  0.0693060   5.427 5.72e-08 ***
+## ns(Time, df = 3)2  0.3418135  0.1332763   2.565   0.0103 *  
+## ns(Time, df = 3)3 -0.3050934  0.0655296  -4.656 3.23e-06 ***
+## Log(theta)         1.0208428  0.0401875  25.402  < 2e-16 ***
+## 
+## Zero-inflation model coefficients (binomial with logit link):
+##                Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)    -3.87293    0.46340  -8.358  < 2e-16 ***
+## Temp.c          0.23740    0.03970   5.979 2.24e-09 ***
+## I(Temp.c^2)     0.07558    0.01401   5.395 6.86e-08 ***
+## Pelicans        0.13424    0.03356   4.000 6.34e-05 ***
+## fExposure2     -1.05138    0.33766  -3.114  0.00185 ** 
+## fWaterClarity2  2.03260    0.34676   5.862 4.58e-09 ***
+## fWaterClarity3  3.89854    0.35191  11.078  < 2e-16 ***
+## fImageClarity2 -0.54567    0.22902  -2.383  0.01719 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Theta = 2.7755 
+## Number of iterations in BFGS optimization: 26 
+## Log-likelihood: -8019 on 18 Df
+\end{verbatim}
+
+Now that all out our predictors are significant let's compare our new
+model with the full model.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{lrtest}\NormalTok{(zinb,zinb2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Likelihood ratio test
+## 
+## Model 1: Count ~ offset(log(adjArea)) + Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + ns(Time, df = 3) | Discharge + I(Discharge^2) + 
+##     Temp.c + I(Temp.c^2) + ns(Time, df = 3) + Pelicans + fExposure + 
+##     fWaterClarity + fImageClarity
+## Model 2: Count ~ offset(log(adjArea)) + Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + ns(Time, df = 3) | Temp.c + I(Temp.c^2) + 
+##     Pelicans + fExposure + fWaterClarity + fImageClarity
+##   #Df  LogLik Df  Chisq Pr(>Chisq)    
+## 1  23 -8002.5                         
+## 2  18 -8018.7 -5 32.293  5.199e-06 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{AIC}\NormalTok{(zinb,zinb2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       df      AIC
+## zinb  23 16051.09
+## zinb2 18 16073.39
+\end{verbatim}
+
+Both the likelihood ratio test and AIC comparison reveal the full model
+is a better fit than the updated model, even with non significant
+parameters. Lets examine the diagnostics plot for the full model to see
+if the model is valid (Figure 7).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_7-1.pdf}
+\caption{(\#fig:Figure\_7)Model diagnostic plots. \textbf{a)} Pearson
+residuals versus fitted values, we should not see any clear pattern.
+\textbf{b)} histogram of pearson residuals, we should see residuals
+normally distributed around 0. \textbf{c)} Auto-correlation function of
+residuals and \textbf{d)} Partial autocorrelation function, vertical
+bars should be between the two horizontal blue lines if resdiuals are
+indpendent.}
+\end{figure}
+
+The diagnostic plots in figure 7 reveal that our model has residual
+problems (figure 7 a and b) and does not meet assumptions of
+independence (Figure 7 c and d). The time spline does not seem to reduce
+the autocorrelation in the model likely due to the strong serial
+correlation. The residual plots reveal that our model is unable to
+capture some of the variability in the data. We can examine what may be
+causing this through plotting our response versus our predictors and
+highllighting the points with large residual errors (Figure 8).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure\%208-1.pdf}
+\caption{(\#fig:Figure 8)Count vs predictor plots. Black dots are raw
+data, red dots are observations with residuals \textgreater{} 4
+(i.e.~poor fitting observsations in the model)}
+\end{figure}
+
+It appears from Figure 8a that all of the residual error is comming from
+an ``interesting anomaly'' of higher than expected fish counts at
+positive discharges \textgreater{}20 cm s\textsuperscript{-1}.
+Unfortunately we do not have a variable to account for this occurence,
+therefore high residual error occurs at these points. If we take a
+closer look at the raw data you will notice that these points for the
+most part are clustered together in time (ie. lines 1730--1734 and lines
+1752--1754), thus accounting for autocorrelation may rectify this
+problem.
+
+\begin{verbatim}
+##      Count Discharge   Temp DOY Hour Hour.M   Time Dead Pelicans Exposure
+## 288     15    26.643 18.983 152   16  16.75 102.75    0        0        2
+## 1730    23    24.980 22.056 174   14  14.25 628.25    0        0        2
+## 1731    15    24.943 22.203 174   14  14.50 628.50    0        0        2
+## 1733    19    23.242 22.359 174   15  15.00 629.00    0        0        2
+## 1734    17    25.858 22.348 174   15  15.25 629.25    0        0        2
+## 1752     4    33.355 21.237 174   19  19.75 633.75    0        0        2
+## 1753     7    29.689 21.145 174   20  20.00 634.00    0        1        2
+## 1754     7    33.180 21.119 174   20  20.25 634.25    0        0        2
+##      ImageClarity WaterClarity  adjArea PercentObstructed  Obs  Density
+## 288             1            3 4.211716               0.0  288 3.561494
+## 1730            1            2 3.542491              11.1 1730 6.492606
+## 1731            2            2 3.977092               0.0 1731 3.771600
+## 1733            2            2 3.979662               0.0 1733 4.774275
+## 1734            2            2 3.830908               3.8 1734 4.437590
+## 1752            1            3 3.930974               0.0 1752 1.017559
+## 1753            1            3 3.827324               2.7 1753 1.828954
+## 1754            1            3 3.930974               0.0 1754 1.780729
+##      fExposure fImageClarity fWaterClarity bCount fPelicans   Temp.c
+## 288          2             1             3      1         0 1.279231
+## 1730         2             1             2      1         0 4.352231
+## 1731         2             2             2      1         0 4.499231
+## 1733         2             2             2      1         0 4.655231
+## 1734         2             2             2      1         0 4.644231
+## 1752         2             1             3      1         0 3.533231
+## 1753         2             1             3      1         1 3.441231
+## 1754         2             1             3      1         0 3.415231
+##         Hour.c
+## 288  2.7137714
+## 1730 0.7137714
+## 1731 0.7137714
+## 1733 1.7137714
+## 1734 1.7137714
+## 1752 5.7137714
+## 1753 6.7137714
+## 1754 6.7137714
+\end{verbatim}
+
+Next let's add lagged response variables as predicters to the full model
+which will hopefully account for the autocorrelation among observations.
+I sequentially removed insignifcant predictors until the resulting
+model:
+
+\begin{verbatim}
+## 
+## Call:
+## zeroinfl(formula = Count ~ offset(log(adjArea)) + AR1 + AR2 + AR3 + 
+##     Discharge + I(Discharge^2) + Temp.c + Pelicans + Time | AR1 + 
+##     Temp.c + I(Temp.c^2) + Pelicans + fWaterClarity + fImageClarity + 
+##     Time, data = Z, dist = "negbin", x = TRUE)
+## 
+## Pearson residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.9091 -0.6405 -0.1444  0.4821  6.4606 
+## 
+## Count model coefficients (negbin with log link):
+##                  Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)     1.179e+00  4.153e-02  28.397  < 2e-16 ***
+## AR1             1.510e-02  1.075e-03  14.049  < 2e-16 ***
+## AR2             5.814e-03  1.154e-03   5.036 4.74e-07 ***
+## AR3             3.871e-03  1.066e-03   3.630 0.000283 ***
+## Discharge      -2.518e-02  1.772e-03 -14.207  < 2e-16 ***
+## I(Discharge^2) -1.370e-03  1.082e-04 -12.665  < 2e-16 ***
+## Temp.c          3.079e-02  8.389e-03   3.670 0.000242 ***
+## Pelicans       -4.067e-02  5.644e-03  -7.205 5.81e-13 ***
+## Time            2.367e-04  6.912e-05   3.425 0.000616 ***
+## Log(theta)      1.402e+00  4.422e-02  31.698  < 2e-16 ***
+## 
+## Zero-inflation model coefficients (binomial with logit link):
+##                  Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)    -2.3898025  0.4352232  -5.491 4.00e-08 ***
+## AR1            -0.1675209  0.0163693 -10.234  < 2e-16 ***
+## Temp.c          0.1250615  0.0463652   2.697 0.006990 ** 
+## I(Temp.c^2)     0.0522976  0.0150401   3.477 0.000507 ***
+## Pelicans        0.1342999  0.0284863   4.715 2.42e-06 ***
+## fWaterClarity2  0.9585414  0.3861823   2.482 0.013061 *  
+## fWaterClarity3  1.9596312  0.3942031   4.971 6.66e-07 ***
+## fImageClarity2 -0.5508982  0.2446019  -2.252 0.024308 *  
+## Time            0.0010673  0.0003742   2.852 0.004339 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Theta = 4.0619 
+## Number of iterations in BFGS optimization: 35 
+## Log-likelihood: -7607 on 19 Df
+\end{verbatim}
+
+If we look at the diagnostic plots we see that we have much more
+heteroskedacity in the residuals (figure 9a), but the addition of lagged
+response predictors has reduced the autocorrelation (Figure 9c and d),
+although significant autocorrelation still occurs.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_9-1.pdf}
+\caption{(\#fig:Figure\_9)Model diagnostic plots. \textbf{a)} Pearson
+residuals versus fitted values, we should not see any clear pattern.
+\textbf{b)} histogram of pearson residuals, we should see residuals
+normally distributed around 0. \textbf{c)} Auto-correlation function of
+residuals and \textbf{d)} Partial autocorrelation function, vertical
+bars should be between the two horizontal blue lines if resdiuals are
+indpendent.}
+\end{figure}
+
+Lets see if our new model (zinb3) is any better than our original full
+model by compairing AIC.
+
+\begin{verbatim}
+##       df      AIC
+## zinb  23 16051.09
+## zinb3 19 15252.83
+\end{verbatim}
+
+Looks like our new model has a better fit. We can use a sandwich
+estimator to generate more robust standard errors to account for both
+the heteroskedacity and autocorrelation in the residuals. We can then
+check that our predictors are still significant with better error
+estimates.
+
+\begin{verbatim}
+## Loading required package: sandwich
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## t test of coefficients:
+## 
+##                         Estimate  Std. Error  t value  Pr(>|t|)    
+## count_(Intercept)     1.1792e+00  4.5785e-02  25.7558 < 2.2e-16 ***
+## count_AR1             1.5101e-02  1.1295e-03  13.3703 < 2.2e-16 ***
+## count_AR2             5.8143e-03  1.1068e-03   5.2535 1.636e-07 ***
+## count_AR3             3.8706e-03  1.0592e-03   3.6541 0.0002641 ***
+## count_Discharge      -2.5177e-02  1.9862e-03 -12.6764 < 2.2e-16 ***
+## count_I(Discharge^2) -1.3701e-03  1.4797e-04  -9.2591 < 2.2e-16 ***
+## count_Temp.c          3.0790e-02  8.3930e-03   3.6686 0.0002497 ***
+## count_Pelicans       -4.0667e-02  6.3976e-03  -6.3566 2.500e-10 ***
+## count_Time            2.3673e-04  6.4682e-05   3.6599 0.0002583 ***
+## zero_(Intercept)     -2.3898e+00  5.0493e-01  -4.7329 2.354e-06 ***
+## zero_AR1             -1.6752e-01  2.7377e-02  -6.1191 1.111e-09 ***
+## zero_Temp.c           1.2506e-01  4.7166e-02   2.6515 0.0080711 ** 
+## zero_I(Temp.c^2)      5.2298e-02  1.4849e-02   3.5219 0.0004372 ***
+## zero_Pelicans         1.3430e-01  3.0722e-02   4.3715 1.292e-05 ***
+## zero_fWaterClarity2   9.5854e-01  4.1708e-01   2.2982 0.0216441 *  
+## zero_fWaterClarity3   1.9596e+00  4.3244e-01   4.5315 6.169e-06 ***
+## zero_fImageClarity2  -5.5090e-01  2.3870e-01  -2.3079 0.0210961 *  
+## zero_Time             1.0673e-03  3.8793e-04   2.7512 0.0059867 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+Looks like all of the predictors remain significant. Let's compare the
+fitted model with the real data.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_10-1.pdf}
+\caption{(\#fig:Figure\_10)Carp counts (black circles) at each
+observation index overlayed by the fitted model zinb3 model (red line).}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_11-1.pdf}
+\caption{(\#fig:Figure\_11)Original carp count histogram (black lines)
+with zinb3 modelled histogram (blue circles) and zero-inflated negative
+binomial probability curve overlayed (red line).}
+\end{figure}
+
+It appears the model does a decent job tracking the raw data (Figure 10
+and 11) but over estimates counts when raw carp counts are high (Figure
+10). A more appropriate model for the full dataset may be a
+zero-inflated generalized linear mixed model (ZIGLMM) or zero-inflated
+generalized additive mixed model (ZIGAMM) with an appropriate
+correlation error structure. These are complex models and the frontier
+of current statistical research, which unfortunately means these models
+are not readily available in R yet. Another approach to dealing with
+autocorrelated data is thinning the observations until they are
+independent, I will do this in the next section and compare results to
+our zero-inflated model with a sandwich estimator for autocorrelated
+data.
+
+\subsubsection{b) Data thinning}\label{b-data-thinning}
+
+I will attempt to deal with the auto-correlation by thinning the
+data---reducing the observations until they are not auto-correlated any
+more. Due to the high auto-correlation, the data is not found to be
+independent until thinned to every 25th observation (summarized in fig
+12). This means that observations are indpendent of one another every
+6.25 hours and reduces the total number of observations from 2222 to 89.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_12-1.pdf}
+\caption{(\#fig:Figure\_12)Auto-correlation function for (a) raw data,
+(b) thined by 8 observations, (c) thinned by 16 observations, and (d)
+thinned by 25 observations. Vertical bars should be between the two
+horizontal blue lines if resdiuals are indpendent.}
+\end{figure}
+
+Now lets look at the thinned data. Figure 13 shows we are still
+potentally dealing with zero inflated and the relationships between the
+count data and covariates show similar relationships to the full
+dataset.
+
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_13-1.pdf}
+Lets see if we need a zero-inflated model to predict the number of zeros
+in our dataset
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Poisson glm}
+\NormalTok{pois_thin<-}\KeywordTok{glm}\NormalTok{(Count~Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea)), }\DataTypeTok{family=}\StringTok{"poisson"}\NormalTok{, }\DataTypeTok{data=}\NormalTok{Z[}\KeywordTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{,}\KeywordTok{dim}\NormalTok{(Z)[}\DecValTok{1}\NormalTok{],}\DataTypeTok{by=}\DecValTok{25}\NormalTok{),])}
+
+\CommentTok{#Negative binomial glm model}
+\NormalTok{negb_thin<-}\KeywordTok{glm.nb}\NormalTok{(Count~Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea)), }\DataTypeTok{data=}\NormalTok{Z[}\KeywordTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{,}\KeywordTok{dim}\NormalTok{(Z)[}\DecValTok{1}\NormalTok{],}\DataTypeTok{by=}\DecValTok{25}\NormalTok{),])}
+
+\CommentTok{#zero inflated poisson}
+\NormalTok{zip_thin<-}\KeywordTok{zeroinfl}\NormalTok{(Count~Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea))|Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+fExposure+fWaterClarity+fImageClarity,}\DataTypeTok{data=}\NormalTok{Z[}\KeywordTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{,}\KeywordTok{dim}\NormalTok{(Z)[}\DecValTok{1}\NormalTok{],}\DataTypeTok{by=}\DecValTok{25}\NormalTok{),])}
+\CommentTok{#zero inflated negative binomial}
+\NormalTok{zinb_thin<-}\KeywordTok{zeroinfl}\NormalTok{(Count~Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea))|Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+fExposure+fWaterClarity+fImageClarity,}\DataTypeTok{dist=}\StringTok{"negbin"}\NormalTok{,}\DataTypeTok{data=}\NormalTok{Z[}\KeywordTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{,}\KeywordTok{dim}\NormalTok{(Z)[}\DecValTok{1}\NormalTok{],}\DataTypeTok{by=}\DecValTok{25}\NormalTok{),])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  Obs Pois   NB  ZIP ZINB 
+##   15    4    7   14   14
+\end{verbatim}
+
+Looks like the zero inflated models are more accurate in determining the
+zeros, let's see if whether the zero-infalted poisson accounts for the
+overdispersion or if we need a zero-inflated negative binomial by
+conducting a liklihood ratio test and comparing AIC values.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{lrtest}\NormalTok{(zip_thin,zinb_thin)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Likelihood ratio test
+## 
+## Model 1: Count ~ Discharge + I(Discharge^2) + Temp.c + I(Temp.c^2) + Pelicans + 
+##     offset(log(adjArea)) | Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + fExposure + fWaterClarity + fImageClarity
+## Model 2: Count ~ Discharge + I(Discharge^2) + Temp.c + I(Temp.c^2) + Pelicans + 
+##     offset(log(adjArea)) | Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + fExposure + fWaterClarity + fImageClarity
+##   #Df  LogLik Df  Chisq Pr(>Chisq)    
+## 1  16 -432.20                         
+## 2  17 -309.19  1 246.02  < 2.2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{AIC}\NormalTok{(zip_thin,zinb_thin)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##           df      AIC
+## zip_thin  16 896.3922
+## zinb_thin 17 652.3758
+\end{verbatim}
+
+Looks like the ZINB is the better model. Model selection time. count
+remove temp.c + temp.c\^{}2\textbar{} zero remove image clarity + temp.c
++temp.c\^{}2+Pelicans + pelicans\^{}2+ water clarity
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#zero inflated negative binomial}
+\NormalTok{zinb_thin2<-}\KeywordTok{zeroinfl}\NormalTok{(Count~Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea))|Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+fExposure+fWaterClarity+fImageClarity,}\DataTypeTok{dist=}\StringTok{"negbin"}\NormalTok{,}\DataTypeTok{data=}\NormalTok{Z[}\KeywordTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{,}\KeywordTok{dim}\NormalTok{(Z)[}\DecValTok{1}\NormalTok{],}\DataTypeTok{by=}\DecValTok{25}\NormalTok{),])}
+\KeywordTok{summary}\NormalTok{(zinb_thin2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## zeroinfl(formula = Count ~ Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + offset(log(adjArea)) | Discharge + 
+##     I(Discharge^2) + Temp.c + I(Temp.c^2) + Pelicans + fExposure + 
+##     fWaterClarity + fImageClarity, data = Z[seq(1, dim(Z)[1], by = 25), 
+##     ], dist = "negbin")
+## 
+## Pearson residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.6342 -0.6256 -0.1053  0.5243  2.1519 
+## 
+## Count model coefficients (negbin with log link):
+##                  Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)     2.1808592  0.1048269  20.804  < 2e-16 ***
+## Discharge      -0.0462162  0.0083565  -5.531 3.19e-08 ***
+## I(Discharge^2) -0.0033614  0.0005378  -6.250 4.10e-10 ***
+## Temp.c          0.0223601  0.0430925   0.519   0.6038    
+## I(Temp.c^2)    -0.0255916  0.0199961  -1.280   0.2006    
+## Pelicans       -0.0912952  0.0262302  -3.481   0.0005 ***
+## Log(theta)      1.2253776  0.2114862   5.794 6.87e-09 ***
+## 
+## Zero-inflation model coefficients (binomial with logit link):
+##                  Estimate Std. Error z value Pr(>|z|)  
+## (Intercept)      -0.21150    2.59331  -0.082   0.9350  
+## Discharge         0.47441    0.25842   1.836   0.0664 .
+## I(Discharge^2)   -0.02760    0.01517  -1.820   0.0688 .
+## Temp.c           -0.05287    0.21177  -0.250   0.8028  
+## I(Temp.c^2)       0.16025    0.09588   1.671   0.0946 .
+## Pelicans          0.22879    0.19158   1.194   0.2324  
+## fExposure2       -3.30444    2.71637  -1.216   0.2238  
+## fWaterClarity2   -0.50408    1.36843  -0.368   0.7126  
+## fWaterClarity3    0.57501    1.39171   0.413   0.6795  
+## fImageClarity2  -15.82044 1888.65893  -0.008   0.9933  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Theta = 3.4055 
+## Number of iterations in BFGS optimization: 34 
+## Log-likelihood: -309.2 on 17 Df
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{zinb_thin2<-}\KeywordTok{zeroinfl}\NormalTok{(Count~Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea))|Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+fExposure+fWaterClarity+fImageClarity,}\DataTypeTok{dist=}\StringTok{"negbin"}\NormalTok{,}\DataTypeTok{data=}\NormalTok{Z[}\KeywordTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{,}\KeywordTok{dim}\NormalTok{(Z)[}\DecValTok{1}\NormalTok{],}\DataTypeTok{by=}\DecValTok{25}\NormalTok{),])}
+\KeywordTok{summary}\NormalTok{(zinb_thin2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## zeroinfl(formula = Count ~ Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + offset(log(adjArea)) | Discharge + 
+##     I(Discharge^2) + Temp.c + I(Temp.c^2) + Pelicans + fExposure + 
+##     fWaterClarity + fImageClarity, data = Z[seq(1, dim(Z)[1], by = 25), 
+##     ], dist = "negbin")
+## 
+## Pearson residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.6342 -0.6256 -0.1053  0.5243  2.1519 
+## 
+## Count model coefficients (negbin with log link):
+##                  Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)     2.1808592  0.1048269  20.804  < 2e-16 ***
+## Discharge      -0.0462162  0.0083565  -5.531 3.19e-08 ***
+## I(Discharge^2) -0.0033614  0.0005378  -6.250 4.10e-10 ***
+## Temp.c          0.0223601  0.0430925   0.519   0.6038    
+## I(Temp.c^2)    -0.0255916  0.0199961  -1.280   0.2006    
+## Pelicans       -0.0912952  0.0262302  -3.481   0.0005 ***
+## Log(theta)      1.2253776  0.2114862   5.794 6.87e-09 ***
+## 
+## Zero-inflation model coefficients (binomial with logit link):
+##                  Estimate Std. Error z value Pr(>|z|)  
+## (Intercept)      -0.21150    2.59331  -0.082   0.9350  
+## Discharge         0.47441    0.25842   1.836   0.0664 .
+## I(Discharge^2)   -0.02760    0.01517  -1.820   0.0688 .
+## Temp.c           -0.05287    0.21177  -0.250   0.8028  
+## I(Temp.c^2)       0.16025    0.09588   1.671   0.0946 .
+## Pelicans          0.22879    0.19158   1.194   0.2324  
+## fExposure2       -3.30444    2.71637  -1.216   0.2238  
+## fWaterClarity2   -0.50408    1.36843  -0.368   0.7126  
+## fWaterClarity3    0.57501    1.39171   0.413   0.6795  
+## fImageClarity2  -15.82044 1888.65893  -0.008   0.9933  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Theta = 3.4055 
+## Number of iterations in BFGS optimization: 34 
+## Log-likelihood: -309.2 on 17 Df
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{zinb_thin2<-}\KeywordTok{zeroinfl}\NormalTok{(Count~Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+}\KeywordTok{offset}\NormalTok{(}\KeywordTok{log}\NormalTok{(adjArea))|Discharge+}\KeywordTok{I}\NormalTok{(Discharge^}\DecValTok{2}\NormalTok{)+Temp.c+}\KeywordTok{I}\NormalTok{(Temp.c^}\DecValTok{2}\NormalTok{)+Pelicans+fExposure+fWaterClarity+fImageClarity,}\DataTypeTok{dist=}\StringTok{"negbin"}\NormalTok{,}\DataTypeTok{data=}\NormalTok{Z[}\KeywordTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{,}\KeywordTok{dim}\NormalTok{(Z)[}\DecValTok{1}\NormalTok{],}\DataTypeTok{by=}\DecValTok{25}\NormalTok{),])}
+\KeywordTok{summary}\NormalTok{(zinb_thin2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## zeroinfl(formula = Count ~ Discharge + I(Discharge^2) + Temp.c + 
+##     I(Temp.c^2) + Pelicans + offset(log(adjArea)) | Discharge + 
+##     I(Discharge^2) + Temp.c + I(Temp.c^2) + Pelicans + fExposure + 
+##     fWaterClarity + fImageClarity, data = Z[seq(1, dim(Z)[1], by = 25), 
+##     ], dist = "negbin")
+## 
+## Pearson residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.6342 -0.6256 -0.1053  0.5243  2.1519 
+## 
+## Count model coefficients (negbin with log link):
+##                  Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)     2.1808592  0.1048269  20.804  < 2e-16 ***
+## Discharge      -0.0462162  0.0083565  -5.531 3.19e-08 ***
+## I(Discharge^2) -0.0033614  0.0005378  -6.250 4.10e-10 ***
+## Temp.c          0.0223601  0.0430925   0.519   0.6038    
+## I(Temp.c^2)    -0.0255916  0.0199961  -1.280   0.2006    
+## Pelicans       -0.0912952  0.0262302  -3.481   0.0005 ***
+## Log(theta)      1.2253776  0.2114862   5.794 6.87e-09 ***
+## 
+## Zero-inflation model coefficients (binomial with logit link):
+##                  Estimate Std. Error z value Pr(>|z|)  
+## (Intercept)      -0.21150    2.59331  -0.082   0.9350  
+## Discharge         0.47441    0.25842   1.836   0.0664 .
+## I(Discharge^2)   -0.02760    0.01517  -1.820   0.0688 .
+## Temp.c           -0.05287    0.21177  -0.250   0.8028  
+## I(Temp.c^2)       0.16025    0.09588   1.671   0.0946 .
+## Pelicans          0.22879    0.19158   1.194   0.2324  
+## fExposure2       -3.30444    2.71637  -1.216   0.2238  
+## fWaterClarity2   -0.50408    1.36843  -0.368   0.7126  
+## fWaterClarity3    0.57501    1.39171   0.413   0.6795  
+## fImageClarity2  -15.82044 1888.65893  -0.008   0.9933  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Theta = 3.4055 
+## Number of iterations in BFGS optimization: 34 
+## Log-likelihood: -309.2 on 17 Df
+\end{verbatim}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_14-1.pdf}
+\caption{(\#fig:Figure\_14)Model diagnostic plots. \textbf{a)} Pearson
+residuals versus fitted values, we should not see any clear pattern.
+\textbf{b)} histogram of pearson residuals, we should see residuals
+normally distributed around 0. \textbf{c)} Auto-correlation function of
+residuals and \textbf{d)} Partial autocorrelation function, vertical
+bars should be between the two horizontal blue lines if resdiuals are
+indpendent.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_15-1.pdf}
+\caption{(\#fig:Figure\_15)Carp counts (black circles) at each
+observation index overlayed by the fitted model zinb3 model (red line).}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{Carp_Count_Report_files/figure-latex/Figure_16-1.pdf}
+\caption{(\#fig:Figure\_16)Original carp count histogram (black lines)
+with zinb3 modelled histogram (blue circles) and zero-inflated negative
+binomial probability curve overlayed (red line).}
+\end{figure}
+
+\subsection{c) Biologically relavent
+thinning}\label{c-biologically-relavent-thinning}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(mgcv)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: nlme
+\end{verbatim}
+
+\begin{verbatim}
+## This is mgcv 1.8-15. For overview type 'help("mgcv-package")'.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(Count~Hour,}\DataTypeTok{data=}\NormalTok{Z,}\DataTypeTok{pch=}\DecValTok{19}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{rgb}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{,}\FloatTok{0.1}\NormalTok{))}
+\NormalTok{fit<-}\KeywordTok{loess}\NormalTok{(Count~Hour,}\DataTypeTok{data=}\NormalTok{Z,}\DataTypeTok{family=}\StringTok{"gaussian"}\NormalTok{,}\DataTypeTok{span=}\NormalTok{.}\DecValTok{25}\NormalTok{, }\DataTypeTok{degree=}\DecValTok{1}\NormalTok{)}
+\NormalTok{fit2<-}\KeywordTok{gam}\NormalTok{(Count~}\KeywordTok{s}\NormalTok{(Hour),}\DataTypeTok{data=}\NormalTok{Z,}\DataTypeTok{offset=}\KeywordTok{log}\NormalTok{(adjArea),}\DataTypeTok{family=}\StringTok{"nb"}\NormalTok{)}
+
+\NormalTok{fit2<-}\KeywordTok{gam}\NormalTok{(Count~}\KeywordTok{s}\NormalTok{(Discharge)+}\KeywordTok{s}\NormalTok{(Temp)+Pelicans+}\KeywordTok{s}\NormalTok{(DOY)+}\KeywordTok{s}\NormalTok{(Hour),}\DataTypeTok{data=}\NormalTok{Z,}\DataTypeTok{offset=}\KeywordTok{log}\NormalTok{(adjArea),}\DataTypeTok{family=}\StringTok{"nb"}\NormalTok{)}
+\NormalTok{fit3<-}\KeywordTok{gam}\NormalTok{(Count~}\KeywordTok{s}\NormalTok{(Discharge)+Pelicans+}\KeywordTok{s}\NormalTok{(DOY)+}\KeywordTok{s}\NormalTok{(Hour),}\DataTypeTok{data=}\NormalTok{Z,}\DataTypeTok{offset=}\KeywordTok{log}\NormalTok{(adjArea),}\DataTypeTok{family=}\StringTok{"nb"}\NormalTok{)}
+
+
+\KeywordTok{curve}\NormalTok{(}\KeywordTok{predict}\NormalTok{(fit,}\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{Hour=}\NormalTok{x),}\DataTypeTok{type=}\StringTok{"response"}\NormalTok{),}\DataTypeTok{add=}\OtherTok{TRUE}\NormalTok{,}\DataTypeTok{lwd=}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\StringTok{"red"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Carp_Count_Report_files/figure-latex/unnamed-chunk-19-1.pdf}
+
+\subsection{d) Gamm AR3 model}\label{d-gamm-ar3-model}
+
+\section{Summary of results}\label{summary-of-results}
+
+\section{References}\label{references}
+
+\end{document}
