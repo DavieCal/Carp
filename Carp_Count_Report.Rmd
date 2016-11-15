@@ -331,6 +331,7 @@ Now lets run the full model:
 ```{r fit1, echo=FALSE, message=FALSE}
 require(pscl)
 library(splines)
+library(texreg)
 
 
 ### NOTE: the model statement before the pipe "|" are the count predictors and
@@ -350,7 +351,9 @@ fit<-zip1
 ```{r, echo=FALSE}
 summary(fit)
 
+
 ```
+
 
 We added quadratic terms for $Discharge_i$ and $Temperature_i$ so I will double check the variance inflation factors to ensure we do not have collinearity.
 
@@ -390,7 +393,7 @@ where $Y_i$ is a $\theta$ is the overdispersion parameter such that $var(Y) = \m
 
 Now lets run the likelihood ratio test to determine if overdispersion is still an issue in the model.
 
-```{r zinb,message=FALSE}
+```{r zinb,echo=FALSE,message=FALSE}
 
 zinb<-zeroinfl(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)
                +Pelicans+Hour.c+I(Hour.c^2)+ns(Time,df=3)|
@@ -410,7 +413,7 @@ summary(zinb)
 fit=zinb
 ```
 
-Looks like we still have some non-significant terms. I will sequentially remove predictors until they are all significant predictors in the model. First, I will remove $Hour.c_i$ as well as its quadratic, $Hour.c^{2}_i$ (even though it is significant) from the count component of the model and $Hour^{2}_i$ from the zero model because it has the highest *P-value* in the zero part of the model. I will continue to sequentially remove insignificant parameters (Hour, Time and Discharge) until all parameters are significant. Here is the resulting model: 
+Looks like we still have some non-significant terms. I will sequentially remove predictors until they are all significant predictors in the model. First, I will remove $Hour.c_i$ as well as its quadratic, $Hour.c^{2}_i$ (even though it is significant) from the count component of the model and $Hour.c^{2}_i$ from the zero model because it has the highest *P-value* in the zero part of the model. I will continue to sequentially remove insignificant parameters (Hour, Time and Discharge) until all parameters are significant. Here is the resulting model: 
 
 ```{r,echo=FALSE}
 zinb2<-zeroinfl(Count~offset(log(adjArea))+Discharge+I(Discharge^2)+Temp.c+I(Temp.c^2)+Pelicans+ns(Time,df=3)|Temp.c+I(Temp.c^2)+Pelicans+fExposure+fWaterClarity+fImageClarity,dist="negbin",data=Z)
@@ -419,7 +422,7 @@ summary(zinb2)
 
 Now that all out our predictors are significant let's compare our new model with the full model.
 
-```{r}
+```{r, echo=FALSE}
 
 lrtest(zinb,zinb2)
 AIC(zinb,zinb2)
@@ -454,7 +457,7 @@ par(op)
 
 ```
 
-The diagnostic plots in figure 7 reveal that our model  has residual problems (figure 7 a and b) and does not meet assumptions of independence (Figure 7 c and d). The time spline does not seem to reduce the autocorrelation in the model likely due to the strong serial correlation. The residual plots reveal that our model is unable to capture some of the variability in the data. We can examine what may be causing this through plotting our response versus our predictors and highllighting the points with large residual errors (Figure 8).
+The diagnostic plots in Figure 7 reveal that our model has residual problems (Figure 7 a and b) and does not meet assumptions of independence (Figure 7 c and d). The time spline does not seem to reduce the autocorrelation in the model likely due to the strong serial correlation. The residual plots reveal that our model is unable to capture some of the variability in the data. We can examine what may be causing this through plotting our response versus our predictors and highllighting the points with large residual errors (Figure 8).
 
 ```{r Figure 8,echo=FALSE, fig.cap="Count vs predictor plots. Black dots are raw data, red dots are observations with residuals > 4 (i.e. poor fitting observsations in the model)"}
 m<-matrix(c(1,2,
@@ -479,10 +482,11 @@ mtext("(d)",font=2, side = 3,line=-1.1, at=775)
 
 ```
 
-It appears from Figure 8a that all of the residual error is comming from an "interesting anomaly" of higher than expected fish counts at positive discharges >20 cm s^-1^. Unfortunately we do not have a variable to account for this occurence, therefore high residual error occurs at these points. If we take a closer look at the raw data you will notice that these points for the most part are clustered together in time (ie. lines 1730--1734 and lines 1752--1754), thus accounting for autocorrelation may rectify this problem. 
+It appears from Figure 8a that all of the residual error is comming from an "interesting anomaly" of higher than expected fish counts at positive discharges >20 cm s^-1^. Unfortunately we do not have a variable to account for this occurence, therefore high residual error occurs at these points. If we take a closer look at the raw data (Table 1) you will notice that the data are clustered together in time (ie. lines 1730--1734 and lines 1752--1754), thus accounting for autocorrelation may rectify this problem. 
 
-```{r,echo=FALSE}
-Z[residuals(zinb,type="pearson")>4,]
+```{r,echo=FALSE,tab.cap="Table 1: Carp count raw data"}
+library(knitr)
+kable(Z[residuals(zinb,type="pearson")>4,c(1:5,6)])
 ```
 
 Next let's add lagged response variables as predicters to the full model which will hopefully account for the autocorrelation among observations. I sequentially removed insignifcant predictors until the resulting model:
@@ -498,7 +502,7 @@ zinb3<-zeroinfl(Count~offset(log(adjArea))+AR1+AR2+AR3+Discharge+I(Discharge^2)+
 summary(zinb3)
 ```
 
-If we look at the diagnostic plots we see that we have much more heteroskedacity in the residuals (figure 9a), but the addition of lagged response predictors has reduced the autocorrelation (Figure 9c and d), although significant autocorrelation still occurs.  
+If we look at the diagnostic plots we see that we have much more heteroskedacity in the residuals (Figure 9a), but the addition of lagged response predictors has reduced the autocorrelation (Figure 9c and d), although significant autocorrelation still occurs.  
 
 ```{r Figure_9, echo=FALSE, fig.cap = "Model diagnostic plots. **a)** Pearson residuals versus fitted values, we should not see any clear pattern. **b)** histogram of pearson residuals, we should see residuals normally distributed around 0. **c)** Auto-correlation function of residuals and **d)** Partial autocorrelation function, vertical bars should be between the two horizontal blue lines if resdiuals are indpendent."}
 fit<-zinb3
